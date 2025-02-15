@@ -87,7 +87,7 @@ export function ThreadList({
       <PanelResizeHandle className="w-1 hover:bg-gray-200 transition-colors" />
       
       <Panel defaultSize={selectedThread ? 30 : 80} minSize={20}>
-        <main className="h-full overflow-y-auto border-r border-gray-200">
+        <main className="h-full overflow-y-auto border-x border-gray-200">
           {threads.length === 0 ? (
             <div className="w-full h-full flex items-center justify-center bg-white">
               <p className="text-gray-500 capitalize">{folderName} Empty!</p>

@@ -24,7 +24,7 @@ export default async function EmailPage({
         <div className="w-64 flex-none border-r border-gray-200">
           <NavMenu />
         </div>
-        <div className="flex-grow p-2 sm:p-6 overflow-auto">
+        <div className="flex-grow border-l p-2 sm:p-6 overflow-auto">
           <div className="max-w-4xl mx-auto">
             <div className="flex flex-col sm:flex-row items-start justify-between mb-6 mx-6">
               <h1 className="text-2xl font-semibold pr-4 flex-grow max-w-2xl mt-4 sm:mt-0">
