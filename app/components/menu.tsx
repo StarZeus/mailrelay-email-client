@@ -29,18 +29,11 @@ export function NavMenu() {
             <span>Inbox</span>
           </Link>
           <Link
-            href="/f/starred"
-            className="flex items-center space-x-2 text-gray-700 hover:bg-gray-100 p-2 rounded"
-          >
-            <Star size={20} />
-            <span>Starred</span>
-          </Link>
-          <Link
-            href="/f/drafts"
+            href="/f/filters"
             className="flex items-center space-x-2 text-gray-700 hover:bg-gray-100 p-2 rounded"
           >
             <FileText size={20} />
-            <span>Drafts</span>
+            <span>Filters & Actions</span>
           </Link>
           <Link
             href="/f/sent"
@@ -50,18 +43,11 @@ export function NavMenu() {
             <span>Sent Mail</span>
           </Link>
           <Link
-            href="/f/archive"
+            href="/f/processed"
             className="flex items-center space-x-2 text-gray-700 hover:bg-gray-100 p-2 rounded"
           >
             <Check size={20} />
-            <span>Archive</span>
-          </Link>
-          <Link
-            href="/f/trash"
-            className="flex items-center space-x-2 text-gray-700 hover:bg-gray-100 p-2 rounded"
-          >
-            <Trash size={20} />
-            <span>Trash</span>
+            <span>Processed</span>
           </Link>
         </nav>
       </SheetContent>

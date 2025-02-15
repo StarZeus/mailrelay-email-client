@@ -22,11 +22,6 @@ export default function RootLayout({
     <html lang="en" className={`bg-white text-gray-800 ${inter.className}`}>
       <body className="flex h-screen">
         <main className="flex-grow overflow-hidden">{children}</main>
-        <Suspense fallback={<RightSidebarSkeleton />}>
-          <RightSidebar userId={1} />
-        </Suspense>
-        <Toaster closeButton />
-        <WelcomeToast />
       </body>
     </html>
   );
