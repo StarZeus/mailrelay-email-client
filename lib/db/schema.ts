@@ -7,6 +7,8 @@ import {
   integer,
   uniqueIndex,
   index,
+  boolean,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -76,6 +78,39 @@ export const threadFolders = pgTable('thread_folders', {
   folderId: integer('folder_id').references(() => folders.id),
 });
 
+export const filterRules = pgTable('filter_rules', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(),
+  fromPattern: varchar('from_pattern', { length: 255 }),
+  toPattern: varchar('to_pattern', { length: 255 }),
+  subjectPattern: varchar('subject_pattern', { length: 255 }),
+  bodyPattern: text('body_pattern'),
+  isEnabled: boolean('is_enabled').default(true),
+  priority: integer('priority').default(0),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const filterActions = pgTable('filter_actions', {
+  id: serial('id').primaryKey(),
+  ruleId: integer('rule_id').references(() => filterRules.id),
+  actionType: varchar('action_type', { length: 50 }).notNull(), // 'forward', 'webhook', 'kafka', 'javascript'
+  config: jsonb('config').notNull(), // Store action-specific configuration
+  isEnabled: boolean('is_enabled').default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const processedEmails = pgTable('processed_emails', {
+  id: serial('id').primaryKey(),
+  emailId: integer('email_id').references(() => emails.id),
+  ruleId: integer('rule_id').references(() => filterRules.id),
+  actionId: integer('action_id').references(() => filterActions.id),
+  status: varchar('status', { length: 50 }).notNull(), // 'success', 'failed'
+  error: text('error'),
+  processedAt: timestamp('processed_at').defaultNow(),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   sentEmails: many(emails, { relationName: 'sender' }),
   receivedEmails: many(emails, { relationName: 'recipient' }),
@@ -125,5 +160,33 @@ export const threadFoldersRelations = relations(threadFolders, ({ one }) => ({
   folder: one(folders, {
     fields: [threadFolders.folderId],
     references: [folders.id],
+  }),
+}));
+
+export const filterRulesRelations = relations(filterRules, ({ many }) => ({
+  actions: many(filterActions),
+  processedEmails: many(processedEmails),
+}));
+
+export const filterActionsRelations = relations(filterActions, ({ one, many }) => ({
+  rule: one(filterRules, {
+    fields: [filterActions.ruleId],
+    references: [filterRules.id],
+  }),
+  processedEmails: many(processedEmails),
+}));
+
+export const processedEmailsRelations = relations(processedEmails, ({ one }) => ({
+  email: one(emails, {
+    fields: [processedEmails.emailId],
+    references: [emails.id],
+  }),
+  rule: one(filterRules, {
+    fields: [processedEmails.ruleId],
+    references: [filterRules.id],
+  }),
+  action: one(filterActions, {
+    fields: [processedEmails.actionId],
+    references: [filterActions.id],
   }),
 }));

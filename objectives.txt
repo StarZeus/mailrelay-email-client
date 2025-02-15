@@ -1,0 +1,49 @@
+This is a email client that uses Next.js and Tailwind CSS. With a sidebar for folders and a main area for emails.
+
+The emails are stored in a database and the folder structure is stored in a database.
+
+The emails are fetched from the database and displayed in the main area.
+
+I need integrate an create a node based SMTP server to send and receive emails.
+
+The incoming emails are stored in the database. database schema is as configured in the /lib/db/schema.ts file. The same schema is used for the the email client to view the emails.
+
+When a new email is received, the email content is parsed for from address, to address, subject and body. and stored in the database.
+
+When email is read from the email client, the email is marked as read in the database.
+
+Need to create API routes to retrieve,save, update and delete the emails to the database.
+
+I need to add email filter rules. based on the matching rules I need to take one of more below action on the email
+
+Need to create a UI to configure the email filter rules and different actions Under Filters & Actions section.
+
+before the email is downloaded from the SMTP server, the filter rules are applied.
+
+When a rule matches, the email content is parsed for from address, to address, subject and body. and take one or more of the following actions:
+- Forward the email to a configured email address configured in the action section of the rule
+- Call a webhook configured in the action section of the rule
+- Place the message in a kafka topic configued in the action section of the rule
+- Run a javascript configured in the action section of the rule
+
+All processed email are moved to a processed folder.
+
+Need env variables to configure the email client and SMTP server.
+
+One of the env variable need to determine whether to run the email client or SMTP server or both.
+
+Need dockerfile to build and run the SMTP server and the email client.
+
+Need github actions to build and push the docker image to a container registry.
+
+Add a readme file to the project with the instructions to run the email client and SMTP server.
+
+Add a .env file to the project with the environment variables.
+
+Add a docker-compose.yml file to the project with the instructions to run the email client and SMTP server. 
+
+Add a .gitignore file to the project with the instructions to ignore the files and folders.
+
+Add/Update approapriate files for the above requirements.
+
+

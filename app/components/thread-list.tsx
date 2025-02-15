@@ -78,14 +78,6 @@ export function ThreadList({
 
   return (
     <PanelGroup direction="horizontal" className="h-full">
-      <Panel defaultSize={20} minSize={15} maxSize={25}>
-        <div className="h-full border-r border-gray-200">
-          <NavMenu />
-        </div>
-      </Panel>
-      
-      <PanelResizeHandle className="w-1 hover:bg-gray-200 transition-colors" />
-      
       <Panel defaultSize={selectedThread ? 30 : 80} minSize={20}>
         <main className="h-full overflow-y-auto border-x border-gray-200">
           {threads.length === 0 ? (

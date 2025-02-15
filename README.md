@@ -1,66 +1,123 @@
-# Next.js Email Client
+# Mail Relay Email Client
 
-This is an email client template built with Next.js and Postgres. It's built to show off some of the features of the App Router, which enable you to build products that:
+A modern email client with SMTP server capabilities and advanced email filtering rules.
 
-- Navigate between routes in a column layout while maintaining scroll position (layouts support)
-- Submit forms without JavaScript enabled (progressive enhancement)
-- Navigate between routes extremely fast (prefetching and caching)
-- Retain your UI position on reload (URL state)
+## Features
 
-**Demo: https://next-email-client.vercel.app**
+- Next.js 15 web client for managing emails
+- Built-in SMTP server for receiving emails
+- Advanced email filtering rules with multiple action types:
+  - Forward emails to another address
+  - Send to webhook endpoints
+  - Publish to Kafka topics
+  - Execute custom JavaScript code
+- Modern UI built with Tailwind CSS
+- PostgreSQL database for email storage
+- Docker support for easy deployment
 
-## Tech Stack
+## Prerequisites
 
-- **Framework**: [Next.js](https://nextjs.org/)
-- **Database**: [Postgres](https://www.postgresql.org/)
-- **ORM**: [Drizzle](https://orm.drizzle.team/)
-- **UI Library**: [shadcn/ui](https://ui.shadcn.com/)
+- Node.js 20 or later
+- PostgreSQL 16 or later
+- Docker and Docker Compose (optional)
+- pnpm package manager
 
-## Getting Started
+## Setup
 
-```bash
-git clone https://github.com/leerob/next-email-client
-cd next-email-client
-pnpm install
-```
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/mailrelay-email-client.git
+   cd mailrelay-email-client
+   ```
+
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+
+3. Copy the environment variables file:
+   ```bash
+   cp .env.example .env
+   ```
+
+4. Update the environment variables in `.env` with your configuration.
+
+5. Initialize the database:
+   ```bash
+   pnpm db:migrate
+   ```
 
 ## Running Locally
 
-Use the included setup script to create your `.env` file:
+### Development Mode
 
 ```bash
-pnpm db:setup
-```
-
-Then, run the database migrations and seed the database with emails and folders:
-
-```bash
-pnpm db:migrate
-pnpm db:seed
-```
-
-Finally, run the Next.js development server:
-
-```bash
+# Run the Next.js client only
 pnpm dev
+
+# Run the SMTP server only
+pnpm smtp
+
+# Run both client and SMTP server
+pnpm dev:all
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to see the app in action.
+### Production Mode
 
-## Implemented
+```bash
+pnpm build
+pnpm start
+```
 
-- ✅ Search for emails
-- ✅ Profile sidebar with user information
-- ✅ View all threads
-- ✅ View all emails in a thread
-- ✅ Compose view
-- ✅ Seed and setup script
-- ✅ Highlight searched text
-- ✅ Hook up compose view
-- ✅ Delete emails (move to trash)
-- Make side profile dynamic
-- Support Markdown?
-- Make up/down arrows work for threads
-- Global keyboard shortcuts
-- Better date formatting
-- Dark mode styles
+## Docker Deployment
+
+1. Build and run with Docker Compose:
+   ```bash
+   docker-compose up -d
+   ```
+
+2. The services will be available at:
+   - Web Client: http://localhost:3000
+   - SMTP Server: localhost:2525
+
+## Environment Variables
+
+- `POSTGRES_URL`: PostgreSQL connection URL
+- `SMTP_HOST`: SMTP server hostname
+- `SMTP_PORT`: SMTP server port
+- `SMTP_SECURE`: Enable/disable TLS
+- `SMTP_USER`: SMTP authentication username
+- `SMTP_PASS`: SMTP authentication password
+- `SMTP_FROM`: Default "From" address
+- `APP_MODE`: Run mode ('client', 'smtp', or 'both')
+- `APP_PORT`: Web client port
+- `SMTP_SERVER_PORT`: SMTP server port
+- `KAFKA_BROKERS`: Kafka broker addresses
+- `KAFKA_CLIENT_ID`: Kafka client identifier
+- `JWT_SECRET`: JWT signing secret
+
+## Email Filter Rules
+
+1. Access the Filters & Actions section in the web client
+2. Create rules with pattern matching for:
+   - From address
+   - To address
+   - Subject
+   - Body content
+3. Configure actions:
+   - Forward: Send to another email address
+   - Webhook: Send to HTTP endpoint
+   - Kafka: Publish to Kafka topic
+   - JavaScript: Execute custom code
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+MIT License - see LICENSE file for details

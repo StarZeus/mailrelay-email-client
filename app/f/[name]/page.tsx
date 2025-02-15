@@ -56,7 +56,6 @@ async function Threads({
 
   return (
     <div className="h-full flex flex-col">
-      <ThreadHeader folderName={name} count={threads.length} />
       <div className="flex-1 min-h-0 overflow-hidden">
         <ThreadList 
           folderName={name} 
