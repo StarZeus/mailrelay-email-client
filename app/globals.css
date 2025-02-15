@@ -68,3 +68,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+[data-panel-group-direction="horizontal"] > [data-panel-resize-handle] {
+  width: 2px;
+  margin: 0 -1px;
+  cursor: col-resize;
+}
+
+[data-panel-group-direction="horizontal"] > [data-panel-resize-handle]:hover {
+  background: rgb(229 231 235);
+}
