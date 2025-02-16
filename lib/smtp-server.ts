@@ -76,6 +76,7 @@ export class EmailServer {
           senderId: sender.id,
           recipientId: recipient.id,
           sentDate: email.date || new Date(),
+          read: false,
         });
 
       callback();

@@ -1,9 +1,110 @@
 {
-  "id": "df861689-5fc0-470d-b4c0-22d22afe92b4",
-  "prevId": "2bb4aa26-21bc-47db-a17f-dd39c8e3048e",
+  "id": "86023c12-7bdb-48ce-b014-144de3bb6151",
+  "prevId": "7e7c2cf2-9387-485f-ba1a-af829534adaa",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.attachments": {
+      "name": "attachments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "email_id": {
+          "name": "email_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "filename": {
+          "name": "filename",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_type": {
+          "name": "content_type",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "size": {
+          "name": "size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "attachment_email_id_idx": {
+          "name": "attachment_email_id_idx",
+          "columns": [
+            {
+              "expression": "email_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "attachment_filename_idx": {
+          "name": "attachment_filename_idx",
+          "columns": [
+            {
+              "expression": "filename",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "attachments_email_id_emails_id_fk": {
+          "name": "attachments_email_id_emails_id_fk",
+          "tableFrom": "attachments",
+          "tableTo": "emails",
+          "columnsFrom": [
+            "email_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.emails": {
       "name": "emails",
       "schema": "",
@@ -12,6 +113,18 @@
           "name": "id",
           "type": "serial",
           "primaryKey": true,
+          "notNull": true
+        },
+        "from_email": {
+          "name": "from_email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "to_email": {
+          "name": "to_email",
+          "type": "varchar(255)",
+          "primaryKey": false,
           "notNull": true
         },
         "subject": {
@@ -26,20 +139,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "from_email": {
-          "name": "from_email",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "to_email": {
-          "name": "to_email",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "received_at": {
-          "name": "received_at",
+        "sent_date": {
+          "name": "sent_date",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false,
@@ -84,11 +185,11 @@
           "method": "btree",
           "with": {}
         },
-        "received_at_idx": {
-          "name": "received_at_idx",
+        "sent_date_idx": {
+          "name": "sent_date_idx",
           "columns": [
             {
-              "expression": "received_at",
+              "expression": "sent_date",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -227,6 +328,13 @@
           "primaryKey": false,
           "notNull": false,
           "default": "now()"
+        },
+        "enabled": {
+          "name": "enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
         }
       },
       "indexes": {},
@@ -246,6 +354,12 @@
           "type": "serial",
           "primaryKey": true,
           "notNull": true
+        },
+        "email_id": {
+          "name": "email_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         },
         "rule_id": {
           "name": "rule_id",
@@ -281,6 +395,19 @@
       },
       "indexes": {},
       "foreignKeys": {
+        "processed_emails_email_id_emails_id_fk": {
+          "name": "processed_emails_email_id_emails_id_fk",
+          "tableFrom": "processed_emails",
+          "tableTo": "emails",
+          "columnsFrom": [
+            "email_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
         "processed_emails_rule_id_filter_rules_id_fk": {
           "name": "processed_emails_rule_id_filter_rules_id_fk",
           "tableFrom": "processed_emails",
@@ -356,24 +483,6 @@
         },
         "location": {
           "name": "location",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "twitter": {
-          "name": "twitter",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "linkedin": {
-          "name": "linkedin",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "github": {
-          "name": "github",
           "type": "varchar(100)",
           "primaryKey": false,
           "notNull": false

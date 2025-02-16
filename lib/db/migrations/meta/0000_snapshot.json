@@ -1,9 +1,110 @@
 {
-  "id": "2bb4aa26-21bc-47db-a17f-dd39c8e3048e",
+  "id": "7e7c2cf2-9387-485f-ba1a-af829534adaa",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.attachments": {
+      "name": "attachments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "email_id": {
+          "name": "email_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "filename": {
+          "name": "filename",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_type": {
+          "name": "content_type",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "size": {
+          "name": "size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "attachment_email_id_idx": {
+          "name": "attachment_email_id_idx",
+          "columns": [
+            {
+              "expression": "email_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "attachment_filename_idx": {
+          "name": "attachment_filename_idx",
+          "columns": [
+            {
+              "expression": "filename",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "attachments_email_id_emails_id_fk": {
+          "name": "attachments_email_id_emails_id_fk",
+          "tableFrom": "attachments",
+          "tableTo": "emails",
+          "columnsFrom": [
+            "email_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.emails": {
       "name": "emails",
       "schema": "",
@@ -14,23 +115,17 @@
           "primaryKey": true,
           "notNull": true
         },
-        "thread_id": {
-          "name": "thread_id",
-          "type": "integer",
+        "from_email": {
+          "name": "from_email",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
-        "sender_id": {
-          "name": "sender_id",
-          "type": "integer",
+        "to_email": {
+          "name": "to_email",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": false
-        },
-        "recipient_id": {
-          "name": "recipient_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "subject": {
           "name": "subject",
@@ -50,14 +145,21 @@
           "primaryKey": false,
           "notNull": false,
           "default": "now()"
+        },
+        "read": {
+          "name": "read",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
         }
       },
       "indexes": {
-        "thread_id_idx": {
-          "name": "thread_id_idx",
+        "from_email_idx": {
+          "name": "from_email_idx",
           "columns": [
             {
-              "expression": "thread_id",
+              "expression": "from_email",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -68,26 +170,11 @@
           "method": "btree",
           "with": {}
         },
-        "sender_id_idx": {
-          "name": "sender_id_idx",
+        "to_email_idx": {
+          "name": "to_email_idx",
           "columns": [
             {
-              "expression": "sender_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "recipient_id_idx": {
-          "name": "recipient_id_idx",
-          "columns": [
-            {
-              "expression": "recipient_id",
+              "expression": "to_email",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -114,39 +201,65 @@
           "with": {}
         }
       },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.filter_actions": {
+      "name": "filter_actions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "rule_id": {
+          "name": "rule_id",
+          "type": "serial",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "config": {
+          "name": "config",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
       "foreignKeys": {
-        "emails_thread_id_threads_id_fk": {
-          "name": "emails_thread_id_threads_id_fk",
-          "tableFrom": "emails",
-          "tableTo": "threads",
+        "filter_actions_rule_id_filter_rules_id_fk": {
+          "name": "filter_actions_rule_id_filter_rules_id_fk",
+          "tableFrom": "filter_actions",
+          "tableTo": "filter_rules",
           "columnsFrom": [
-            "thread_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "emails_sender_id_users_id_fk": {
-          "name": "emails_sender_id_users_id_fk",
-          "tableFrom": "emails",
-          "tableTo": "users",
-          "columnsFrom": [
-            "sender_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "emails_recipient_id_users_id_fk": {
-          "name": "emails_recipient_id_users_id_fk",
-          "tableFrom": "emails",
-          "tableTo": "users",
-          "columnsFrom": [
-            "recipient_id"
+            "rule_id"
           ],
           "columnsTo": [
             "id"
@@ -156,10 +269,13 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "public.folders": {
-      "name": "folders",
+    "public.filter_rules": {
+      "name": "filter_rules",
       "schema": "",
       "columns": {
         "id": {
@@ -170,89 +286,44 @@
         },
         "name": {
           "name": "name",
-          "type": "varchar(50)",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "public.thread_folders": {
-      "name": "thread_folders",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
         },
-        "thread_id": {
-          "name": "thread_id",
-          "type": "integer",
+        "from_pattern": {
+          "name": "from_pattern",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "folder_id": {
-          "name": "folder_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "thread_folders_thread_id_threads_id_fk": {
-          "name": "thread_folders_thread_id_threads_id_fk",
-          "tableFrom": "thread_folders",
-          "tableTo": "threads",
-          "columnsFrom": [
-            "thread_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "thread_folders_folder_id_folders_id_fk": {
-          "name": "thread_folders_folder_id_folders_id_fk",
-          "tableFrom": "thread_folders",
-          "tableTo": "folders",
-          "columnsFrom": [
-            "folder_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "public.threads": {
-      "name": "threads",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "subject": {
-          "name": "subject",
-          "type": "varchar(255)",
+        "to_pattern": {
+          "name": "to_pattern",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "last_activity_date": {
-          "name": "last_activity_date",
+        "subject_pattern": {
+          "name": "subject_pattern",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "operator": {
+          "name": "operator",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'AND'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false,
@@ -262,10 +333,13 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "public.user_folders": {
-      "name": "user_folders",
+    "public.processed_emails": {
+      "name": "processed_emails",
       "schema": "",
       "columns": {
         "id": {
@@ -274,27 +348,52 @@
           "primaryKey": true,
           "notNull": true
         },
-        "user_id": {
-          "name": "user_id",
+        "email_id": {
+          "name": "email_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
-        "folder_id": {
-          "name": "folder_id",
+        "rule_id": {
+          "name": "rule_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
+        },
+        "action_id": {
+          "name": "action_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "error": {
+          "name": "error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "processed_at": {
+          "name": "processed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {
-        "user_folders_user_id_users_id_fk": {
-          "name": "user_folders_user_id_users_id_fk",
-          "tableFrom": "user_folders",
-          "tableTo": "users",
+        "processed_emails_email_id_emails_id_fk": {
+          "name": "processed_emails_email_id_emails_id_fk",
+          "tableFrom": "processed_emails",
+          "tableTo": "emails",
           "columnsFrom": [
-            "user_id"
+            "email_id"
           ],
           "columnsTo": [
             "id"
@@ -302,12 +401,25 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "user_folders_folder_id_folders_id_fk": {
-          "name": "user_folders_folder_id_folders_id_fk",
-          "tableFrom": "user_folders",
-          "tableTo": "folders",
+        "processed_emails_rule_id_filter_rules_id_fk": {
+          "name": "processed_emails_rule_id_filter_rules_id_fk",
+          "tableFrom": "processed_emails",
+          "tableTo": "filter_rules",
           "columnsFrom": [
-            "folder_id"
+            "rule_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "processed_emails_action_id_filter_actions_id_fk": {
+          "name": "processed_emails_action_id_filter_actions_id_fk",
+          "tableFrom": "processed_emails",
+          "tableTo": "filter_actions",
+          "columnsFrom": [
+            "action_id"
           ],
           "columnsTo": [
             "id"
@@ -317,7 +429,10 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.users": {
       "name": "users",
@@ -365,24 +480,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "twitter": {
-          "name": "twitter",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "linkedin": {
-          "name": "linkedin",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "github": {
-          "name": "github",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "avatar_url": {
           "name": "avatar_url",
           "type": "varchar(255)",
@@ -409,12 +506,18 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
   "enums": {},
   "schemas": {},
   "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
   "_meta": {
     "columns": {},
     "schemas": {},

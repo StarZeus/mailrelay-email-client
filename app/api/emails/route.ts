@@ -18,11 +18,11 @@ export async function GET(request: Request) {
         body: emails.body,
         fromEmail: emails.fromEmail,
         toEmail: emails.toEmail,
-        receivedAt: emails.receivedAt,
+        receivedAt: emails.sentDate,
         read: emails.read,
       })
       .from(emails)
-      .orderBy(desc(emails.receivedAt))
+      .orderBy(desc(emails.sentDate))
       .limit(PAGE_SIZE + 1);
 
     if (cursor) {
@@ -49,3 +49,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ emails: [], nextCursor: null });
   }
 } 
+
+// create patch route to update the email
+export async function PATCH(request: Request) {
+  const { id, read } = await request.json();
+  await db.update(emails).set({ read }).where(eq(emails.id, id));
+  return NextResponse.json({ message: 'Email updated' });
+}

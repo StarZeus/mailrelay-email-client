@@ -5,11 +5,11 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 const ruleSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1).optional(),
   fromPattern: z.string().optional(),
   toPattern: z.string().optional(),
   subjectPattern: z.string().optional(),
-  operator: z.enum(['AND', 'OR']).default('AND'),
+  operator: z.enum(['AND', 'OR']).default('AND').optional(),
   actions: z.array(z.object({
     type: z.enum(['forward', 'webhook', 'kafka', 'javascript']),
     config: z.record(z.any()),

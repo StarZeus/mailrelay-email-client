@@ -2,194 +2,140 @@ import { db } from './drizzle';
 import {
   users,
   emails,
-  folders,
-  userFolders,
-  threads,
-  threadFolders,
+  filterRules,
+  filterActions,
+  processedEmails,
 } from './schema';
 
 async function seed() {
   console.log('Starting seed process...');
-  await seedUsers();
-  await seedFolders();
-  await seedThreadsAndEmails();
-  console.log('Seed process completed successfully.');
-}
-
-async function seedUsers() {
-  await db.insert(users).values([
+  
+  // Seed users
+  const [user1, user2, user3] = await db.insert(users).values([
     {
       firstName: 'Lee',
       lastName: 'Robinson',
-      email: 'lee@leerob.com',
+      email: 'lee@example.com',
       jobTitle: 'VP of Product',
-      company: 'Vercel',
-      location: 'Des Moines, Iowa',
+      company: 'Acme Inc',
+      location: 'New York',
       avatarUrl: 'https://github.com/leerob.png',
     },
     {
-      firstName: 'Guillermo',
-      lastName: 'Rauch',
-      email: 'rauchg@vercel.com',
-      jobTitle: 'CEO',
-      company: 'Vercel',
-      location: 'San Francisco, California',
-      avatarUrl: 'https://github.com/rauchg.png',
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john@example.com',
+      jobTitle: 'Engineer',
+      company: 'Tech Corp',
+      location: 'San Francisco',
+      avatarUrl: 'https://github.com/johndoe.png',
     },
     {
-      firstName: 'Delba',
-      lastName: 'de Oliveira',
-      email: 'delba.oliveira@vercel.com',
-      jobTitle: 'Staff DX Engineer',
-      company: 'Vercel',
-      location: 'London, UK',
-      avatarUrl: 'https://github.com/delbaoliveira.png',
+      firstName: 'Jane',
+      lastName: 'Smith',
+      email: 'jane@example.com',
+      jobTitle: 'Designer',
+      company: 'Design Co',
+      location: 'London',
+      avatarUrl: 'https://github.com/janesmith.png',
     },
-    {
-      firstName: 'Tim',
-      lastName: 'Neutkens',
-      email: 'tim@vercel.com',
-      jobTitle: 'Next.js Lead',
-      company: 'Vercel',
-      location: 'Amsterdam, Netherlands',
-      avatarUrl: 'https://github.com/timneutkens.png',
-    },
-  ]);
-}
+  ]).returning();
 
-async function seedFolders() {
-  await db
-    .insert(folders)
-    .values([
-      { name: 'Inbox' },
-      { name: 'Flagged' },
-      { name: 'Sent' },
-      { name: 'Archive' },
-      { name: 'Spam' },
-      { name: 'Trash' },
-    ]);
-
-  const userFolderValues = [];
-  for (let userId = 1; userId <= 4; userId++) {
-    for (let folderId = 1; folderId <= 6; folderId++) {
-      userFolderValues.push({ userId, folderId });
-    }
-  }
-  await db.insert(userFolders).values(userFolderValues);
-}
-
-async function seedThreadsAndEmails() {
-  // Thread 1: Guillermo talking about Vercel customer feedback
-  const thread1 = await db
-    .insert(threads)
-    .values({
-      subject: 'Vercel Customer Feedback',
-      lastActivityDate: new Date('2023-05-15T10:00:00'),
-    })
-    .returning();
-
-  await db.insert(emails).values([
+  // Seed emails
+  const [email1, email2, email3] = await db.insert(emails).values([
     {
-      threadId: thread1[0].id,
-      senderId: 2, // Guillermo
-      recipientId: 1, // Lee
-      subject: 'Vercel Customer Feedback',
-      body: 'Met with Daniel today. He had some great feedback. After you make a change to your environment variables, he wants to immediately redeploy the application. We should make a toast that has a CTA to redeploy. Thoughts?',
-      sentDate: new Date('2023-05-15T10:00:00'),
+      fromEmail: 'lee@example.com',
+      toEmail: 'john@example.com',
+      subject: 'Project Update',
+      body: 'Here is the latest project update...',
+      sentDate: new Date(),
+      read: false,
     },
     {
-      threadId: thread1[0].id,
-      senderId: 1, // Lee
-      recipientId: 2, // Guillermo
-      subject: 'Re: Vercel Customer Feedback',
-      body: "Good call. I've seen this multiple times now. Let's do it.",
-      sentDate: new Date('2023-05-15T11:30:00'),
+      fromEmail: 'john@example.com',
+      toEmail: 'jane@example.com',
+      subject: 'Design Review',
+      body: 'Can we review the latest designs?',
+      sentDate: new Date(),
+      read: true,
     },
     {
-      threadId: thread1[0].id,
-      senderId: 2, // Guillermo
-      recipientId: 1, // Lee
-      subject: 'Re: Vercel Customer Feedback',
-      body: "Amazing. Let me know when it shipped and I'll follow up.",
-      sentDate: new Date('2023-05-15T13:45:00'),
+      fromEmail: 'jane@example.com',
+      toEmail: 'lee@example.com',
+      subject: 'Meeting Notes',
+      body: 'Notes from today\'s meeting...',
+      sentDate: new Date(),
+      read: false,
     },
-  ]);
+  ]).returning();
 
-  // Thread 2: Delba talking about Next.js and testing out new features
-  const thread2 = await db
-    .insert(threads)
-    .values({
-      subject: 'New Next.js RFC',
-      lastActivityDate: new Date('2023-05-16T09:00:00'),
-    })
-    .returning();
+  // Seed filter rules
+  const [rule1, rule2, rule3] = await db.insert(filterRules).values([
+    {
+      name: 'Important Emails',
+      fromPattern: '*@example.com',
+      subjectPattern: 'urgent|important',
+      operator: 'AND',
+    },
+    {
+      name: 'Archive Old',
+      subjectPattern: 'archive|old',
+      operator: 'OR',
+    },
+    {
+      name: 'Team Updates',
+      fromPattern: 'team@*',
+      subjectPattern: 'update|status',
+      operator: 'AND',
+    },
+  ]).returning();
 
-  await db.insert(emails).values([
+  // Seed filter actions
+  const [action1, action2, action3] = await db.insert(filterActions).values([
     {
-      threadId: thread2[0].id,
-      senderId: 3, // Delba
-      recipientId: 1, // Lee
-      subject: 'New Next.js RFC',
-      body: "I'm working on the first draft of the Dynamic IO docs and examples. Do you want to take a look?",
-      sentDate: new Date('2023-05-16T09:00:00'),
+      ruleId: rule1.id,
+      type: 'mark_important',
+      config: { flag: true },
     },
     {
-      threadId: thread2[0].id,
-      senderId: 1, // Lee
-      recipientId: 3, // Delba
-      subject: 'Re: New Next.js RFC',
-      body: "Absolutely. Let me take a look later tonight and I'll send over feedback.",
-      sentDate: new Date('2023-05-16T10:15:00'),
+      ruleId: rule2.id,
+      type: 'archive',
+      config: { folder: 'archive' },
     },
     {
-      threadId: thread2[0].id,
-      senderId: 3, // Delba
-      recipientId: 1, // Lee
-      subject: 'Re: New Next.js RFC',
-      body: 'Thank you!',
-      sentDate: new Date('2023-05-16T11:30:00'),
+      ruleId: rule3.id,
+      type: 'move',
+      config: { folder: 'team-updates' },
+    },
+  ]).returning();
+
+  // Seed processed emails
+  await db.insert(processedEmails).values([
+    {
+      emailId: email1.id,
+      ruleId: rule1.id,
+      actionId: action1.id,
+      status: 'success',
+      processedAt: new Date(),
+    },
+    {
+      emailId: email2.id,
+      ruleId: rule2.id,
+      actionId: action2.id,
+      status: 'success',
+      processedAt: new Date(),
+    },
+    {
+      emailId: email3.id,
+      ruleId: rule3.id,
+      actionId: action3.id,
+      status: 'success',
+      processedAt: new Date(),
     },
   ]);
 
-  // Thread 3: Tim with steps to test out Turbopack
-  const thread3 = await db
-    .insert(threads)
-    .values({
-      subject: 'Turbopack Testing',
-      lastActivityDate: new Date('2023-05-17T14:00:00'),
-    })
-    .returning();
 
-  await db.insert(emails).values([
-    {
-      threadId: thread3[0].id,
-      senderId: 4, // Tim
-      recipientId: 1, // Lee
-      subject: 'Turbopack Testing Steps',
-      body: `Hi Lee,
-
-Here are the steps to test out Turbopack:
-
-1. npx create-next-app@canary
-2. Select Turbopack when prompted
-3. Run 'npm install' to install dependencies
-4. Start the development server with 'npm run dev -- --turbo'
-5. That's it!
-
-Let me know if you encounter any issues or have any questions.
-
-Best,
-Tim`,
-      sentDate: new Date('2023-05-17T14:00:00'),
-    },
-  ]);
-
-  // Add threads to folders
-  await db.insert(threadFolders).values([
-    { threadId: thread1[0].id, folderId: 1 }, // Inbox
-    { threadId: thread2[0].id, folderId: 1 }, // Inbox
-    { threadId: thread3[0].id, folderId: 1 }, // Inbox
-  ]);
+  console.log('Seed process completed successfully.');
 }
 
 seed()

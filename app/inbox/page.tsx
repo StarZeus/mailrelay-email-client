@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ClientWrapper } from '@/app/components/client-wrapper';
 
 interface Email {
   id: number;
@@ -17,7 +18,7 @@ interface Email {
   read: boolean;
 }
 
-export default function InboxPage() {
+function InboxContent() {
   const [emails, setEmails] = useState<Email[]>([]);
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
   const [loading, setLoading] = useState(true);
@@ -90,7 +91,7 @@ export default function InboxPage() {
               <div
                 key={email.id}
                 ref={i === emails.length - 1 ? ref : undefined}
-                className={`p-4 cursor-pointer hover:bg-gray-50 ${
+                className={`px-4 py-2 cursor-pointer hover:bg-gray-50 ${
                   selectedEmail?.id === email.id ? 'bg-gray-50' : ''
                 } ${!email.read ? 'font-semibold' : ''}`}
                 onClick={() => {
@@ -131,7 +132,7 @@ export default function InboxPage() {
           <>
             <div className="p-6 border-b border-gray-200">
               <h1 className="text-2xl font-semibold mb-4">{selectedEmail.subject}</h1>
-              <div className="flex justify-between items-center text-sm text-gray-500 mb-6">
+              <div className="flex justify-between items-center text-sm text-gray-500">
                 <div>
                   <div>From: {selectedEmail.fromEmail}</div>
                   <div>To: {selectedEmail.toEmail}</div>
@@ -154,5 +155,13 @@ export default function InboxPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function InboxPage() {
+  return (
+    <ClientWrapper>
+      <InboxContent />
+    </ClientWrapper>
   );
 } 

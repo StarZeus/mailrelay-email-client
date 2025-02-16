@@ -109,6 +109,25 @@ export default function FiltersPage() {
     }
   }
 
+  async function handleToggle(id: number) {
+    try {
+      const response = await fetch(`/api/filter-rules`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, enabled: !selectedRule?.isEnabled })
+      });
+      if (!response.ok) throw new Error('Failed to toggle rule');
+
+      fetchRules();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to toggle filter rule',
+        variant: 'destructive',
+      });
+    }
+  }
+
   return (
     <>
       {/* Rules List */}
@@ -124,9 +143,7 @@ export default function FiltersPage() {
                 fromPattern: '',
                 toPattern: '',
                 subjectPattern: '',
-                bodyPattern: '',
                 isEnabled: true,
-                priority: 0,
                 actions: [],
               });
               setIsEditing(true);
@@ -144,9 +161,13 @@ export default function FiltersPage() {
               }`}
               onClick={() => setSelectedRule(rule)}
             >
+              <div className="flex items-center justify-between">
+                <span>{rule.name}</span>
+                <div className="text-sm text-gray-500">{rule?.actions?.length} actions</div>
+              </div>
             </div>
           ))}
-          {rules.length === 0 && (
+          {rules?.length === 0 && (
             <div className="flex-1 flex items-center mt-10 justify-center text-gray-500">
               No filter rules found
             </div>
@@ -159,9 +180,18 @@ export default function FiltersPage() {
         {selectedRule ? (
           <div className="h-full">
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-lg font-semibold">
-                {isEditing ? 'Edit Rule' : 'Rule Details'}
-              </h2>
+              <div className="flex items-center gap-4">
+                <h2 className="text-lg font-semibold">
+                  {isEditing ? 'Edit Rule' : 'Rule Details'}
+                </h2>
+                <div className="flex items-center gap-2">
+                  <Switch 
+                    checked={selectedRule?.isEnabled} 
+                    onCheckedChange={() => handleToggle(selectedRule?.id)} 
+                  />
+                  <Label>Enabled</Label>
+                </div>
+              </div>
               <div className="space-x-2">
                 {isEditing ? (
                   <>
@@ -203,315 +233,70 @@ export default function FiltersPage() {
               </div>
             </div>
 
-            <div className="p-6">
-              <Tabs defaultValue="rule">
-                <TabsList>
-                  <TabsTrigger value="rule">Rule</TabsTrigger>
-                  <TabsTrigger value="actions">Actions</TabsTrigger>
-                </TabsList>
+            <div className="p-6 space-y-6">
+              {/* Rule Settings */}
+              <div className="space-y-4">
+                <div>
+                  <Label>Name</Label>
+                  <Input
+                    value={selectedRule.name}
+                    onChange={(e) =>
+                      setSelectedRule({
+                        ...selectedRule,
+                        name: e.target.value,
+                      })
+                    }
+                    disabled={!isEditing}
+                  />
+                </div>
 
-                <TabsContent value="rule" className="space-y-4">
-                  <div>
-                    <Label>Name</Label>
-                    <Input
-                      value={selectedRule.name}
-                      onChange={(e) =>
-                        setSelectedRule({
-                          ...selectedRule,
-                          name: e.target.value,
-                        })
-                      }
-                      disabled={!isEditing}
-                    />
-                  </div>
+                <div>
+                  <Label>From Pattern</Label>
+                  <Input
+                    value={selectedRule.fromPattern}
+                    onChange={(e) =>
+                      setSelectedRule({
+                        ...selectedRule,
+                        fromPattern: e.target.value,
+                      })
+                    }
+                    disabled={!isEditing}
+                  />
+                </div>
 
-                  <div>
-                    <Label>From Pattern</Label>
-                    <Input
-                      value={selectedRule.fromPattern}
-                      onChange={(e) =>
-                        setSelectedRule({
-                          ...selectedRule,
-                          fromPattern: e.target.value,
-                        })
-                      }
-                      disabled={!isEditing}
-                    />
-                  </div>
+                <div>
+                  <Label>To Pattern</Label>
+                  <Input
+                    value={selectedRule.toPattern}
+                    onChange={(e) =>
+                      setSelectedRule({
+                        ...selectedRule,
+                        toPattern: e.target.value,
+                      })
+                    }
+                    disabled={!isEditing}
+                  />
+                </div>
 
-                  <div>
-                    <Label>To Pattern</Label>
-                    <Input
-                      value={selectedRule.toPattern}
-                      onChange={(e) =>
-                        setSelectedRule({
-                          ...selectedRule,
-                          toPattern: e.target.value,
-                        })
-                      }
-                      disabled={!isEditing}
-                    />
-                  </div>
+                <div>
+                  <Label>Subject Pattern</Label>
+                  <Input
+                    value={selectedRule.subjectPattern}
+                    onChange={(e) =>
+                      setSelectedRule({
+                        ...selectedRule,
+                        subjectPattern: e.target.value,
+                      })
+                    }
+                    disabled={!isEditing}
+                  />
+                </div>
+              </div>
 
-                  <div>
-                    <Label>Subject Pattern</Label>
-                    <Input
-                      value={selectedRule.subjectPattern}
-                      onChange={(e) =>
-                        setSelectedRule({
-                          ...selectedRule,
-                          subjectPattern: e.target.value,
-                        })
-                      }
-                      disabled={!isEditing}
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Body Pattern</Label>
-                    <Textarea
-                      value={selectedRule.bodyPattern}
-                      onChange={(e) =>
-                        setSelectedRule({
-                          ...selectedRule,
-                          bodyPattern: e.target.value,
-                        })
-                      }
-                      disabled={!isEditing}
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Priority</Label>
-                    <Input
-                      type="number"
-                      value={selectedRule.priority}
-                      onChange={(e) =>
-                        setSelectedRule({
-                          ...selectedRule,
-                          priority: parseInt(e.target.value),
-                        })
-                      }
-                      disabled={!isEditing}
-                    />
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="actions" className="space-y-4">
-                  {selectedRule.actions.map((action, index) => (
-                    <Card key={index}>
-                      <CardContent className="pt-6">
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <Select
-                              value={action.type}
-                              onValueChange={(value: any) => {
-                                const newActions = [...selectedRule.actions];
-                                newActions[index] = {
-                                  ...action,
-                                  type: value,
-                                  config: {},
-                                };
-                                setSelectedRule({
-                                  ...selectedRule,
-                                  actions: newActions,
-                                });
-                              }}
-                              disabled={!isEditing}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select action type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="forward">Forward</SelectItem>
-                                <SelectItem value="webhook">Webhook</SelectItem>
-                                <SelectItem value="kafka">Kafka</SelectItem>
-                                <SelectItem value="javascript">JavaScript</SelectItem>
-                              </SelectContent>
-                            </Select>
-
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => {
-                                const newActions = selectedRule.actions.filter(
-                                  (_, i) => i !== index
-                                );
-                                setSelectedRule({
-                                  ...selectedRule,
-                                  actions: newActions,
-                                });
-                              }}
-                              disabled={!isEditing}
-                            >
-                              Remove
-                            </Button>
-                          </div>
-
-                          {action.type === 'forward' && (
-                            <div>
-                              <Label>Forward To</Label>
-                              <Input
-                                value={action.config.forwardTo || ''}
-                                onChange={(e) => {
-                                  const newActions = [...selectedRule.actions];
-                                  newActions[index] = {
-                                    ...action,
-                                    config: {
-                                      ...action.config,
-                                      forwardTo: e.target.value,
-                                    },
-                                  };
-                                  setSelectedRule({
-                                    ...selectedRule,
-                                    actions: newActions,
-                                  });
-                                }}
-                                disabled={!isEditing}
-                              />
-                            </div>
-                          )}
-
-                          {action.type === 'webhook' && (
-                            <div className="space-y-4">
-                              <div>
-                                <Label>URL</Label>
-                                <Input
-                                  value={action.config.url || ''}
-                                  onChange={(e) => {
-                                    const newActions = [...selectedRule.actions];
-                                    newActions[index] = {
-                                      ...action,
-                                      config: {
-                                        ...action.config,
-                                        url: e.target.value,
-                                      },
-                                    };
-                                    setSelectedRule({
-                                      ...selectedRule,
-                                      actions: newActions,
-                                    });
-                                  }}
-                                  disabled={!isEditing}
-                                />
-                              </div>
-                              <div>
-                                <Label>Method</Label>
-                                <Select
-                                  value={action.config.method || 'POST'}
-                                  onValueChange={(value) => {
-                                    const newActions = [...selectedRule.actions];
-                                    newActions[index] = {
-                                      ...action,
-                                      config: {
-                                        ...action.config,
-                                        method: value,
-                                      },
-                                    };
-                                    setSelectedRule({
-                                      ...selectedRule,
-                                      actions: newActions,
-                                    });
-                                  }}
-                                  disabled={!isEditing}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="GET">GET</SelectItem>
-                                    <SelectItem value="POST">POST</SelectItem>
-                                    <SelectItem value="PUT">PUT</SelectItem>
-                                    <SelectItem value="DELETE">DELETE</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                          )}
-
-                          {action.type === 'kafka' && (
-                            <div className="space-y-4">
-                              <div>
-                                <Label>Topic</Label>
-                                <Input
-                                  value={action.config.topic || ''}
-                                  onChange={(e) => {
-                                    const newActions = [...selectedRule.actions];
-                                    newActions[index] = {
-                                      ...action,
-                                      config: {
-                                        ...action.config,
-                                        topic: e.target.value,
-                                      },
-                                    };
-                                    setSelectedRule({
-                                      ...selectedRule,
-                                      actions: newActions,
-                                    });
-                                  }}
-                                  disabled={!isEditing}
-                                />
-                              </div>
-                              <div>
-                                <Label>Brokers (comma-separated)</Label>
-                                <Input
-                                  value={
-                                    Array.isArray(action.config.brokers)
-                                      ? action.config.brokers.join(',')
-                                      : ''
-                                  }
-                                  onChange={(e) => {
-                                    const newActions = [...selectedRule.actions];
-                                    newActions[index] = {
-                                      ...action,
-                                      config: {
-                                        ...action.config,
-                                        brokers: e.target.value
-                                          .split(',')
-                                          .map((s) => s.trim()),
-                                      },
-                                    };
-                                    setSelectedRule({
-                                      ...selectedRule,
-                                      actions: newActions,
-                                    });
-                                  }}
-                                  disabled={!isEditing}
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {action.type === 'javascript' && (
-                            <div>
-                              <Label>JavaScript Code</Label>
-                              <Textarea
-                                value={action.config.code || ''}
-                                onChange={(e) => {
-                                  const newActions = [...selectedRule.actions];
-                                  newActions[index] = {
-                                    ...action,
-                                    config: {
-                                      ...action.config,
-                                      code: e.target.value,
-                                    },
-                                  };
-                                  setSelectedRule({
-                                    ...selectedRule,
-                                    actions: newActions,
-                                  });
-                                }}
-                                disabled={!isEditing}
-                                className="font-mono"
-                                rows={10}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-
+              {/* Actions */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Actions</h3>
                   {isEditing && (
                     <Button
                       onClick={() => {
@@ -533,8 +318,222 @@ export default function FiltersPage() {
                       Add Action
                     </Button>
                   )}
-                </TabsContent>
-              </Tabs>
+                </div>
+
+                {selectedRule?.actions?.map((action, index) => (
+                  <Card key={index}>
+                    <CardContent className="pt-6">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <Select
+                            value={action.type}
+                            onValueChange={(value: any) => {
+                              const newActions = [...selectedRule?.actions];
+                              newActions[index] = {
+                                ...action,
+                                type: value,
+                                config: {},
+                              };
+                              setSelectedRule({
+                                ...selectedRule,
+                                actions: newActions,
+                              });
+                            }}
+                            disabled={!isEditing}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select action type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="forward">Forward</SelectItem>
+                              <SelectItem value="webhook">Webhook</SelectItem>
+                              <SelectItem value="kafka">Kafka</SelectItem>
+                              <SelectItem value="javascript">JavaScript</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              const newActions = selectedRule.actions.filter(
+                                (_, i) => i !== index
+                              );
+                              setSelectedRule({
+                                ...selectedRule,
+                                actions: newActions,
+                              });
+                            }}
+                            disabled={!isEditing}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+
+                        {action.type === 'forward' && (
+                          <div>
+                            <Label>Forward To</Label>
+                            <Input
+                              value={action.config.forwardTo || ''}
+                              onChange={(e) => {
+                                const newActions = [...selectedRule.actions];
+                                newActions[index] = {
+                                  ...action,
+                                  config: {
+                                    ...action.config,
+                                    forwardTo: e.target.value,
+                                  },
+                                };
+                                setSelectedRule({
+                                  ...selectedRule,
+                                  actions: newActions,
+                                });
+                              }}
+                              disabled={!isEditing}
+                            />
+                          </div>
+                        )}
+
+                        {action.type === 'webhook' && (
+                          <div className="space-y-4">
+                            <div>
+                              <Label>URL</Label>
+                              <Input
+                                value={action.config.url || ''}
+                                onChange={(e) => {
+                                  const newActions = [...selectedRule.actions];
+                                  newActions[index] = {
+                                    ...action,
+                                    config: {
+                                      ...action.config,
+                                      url: e.target.value,
+                                    },
+                                  };
+                                  setSelectedRule({
+                                    ...selectedRule,
+                                    actions: newActions,
+                                  });
+                                }}
+                                disabled={!isEditing}
+                              />
+                            </div>
+                            <div>
+                              <Label>Method</Label>
+                              <Select
+                                value={action.config.method || 'POST'}
+                                onValueChange={(value) => {
+                                  const newActions = [...selectedRule.actions];
+                                  newActions[index] = {
+                                    ...action,
+                                    config: {
+                                      ...action.config,
+                                      method: value,
+                                    },
+                                  };
+                                  setSelectedRule({
+                                    ...selectedRule,
+                                    actions: newActions,
+                                  });
+                                }}
+                                disabled={!isEditing}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="GET">GET</SelectItem>
+                                  <SelectItem value="POST">POST</SelectItem>
+                                  <SelectItem value="PUT">PUT</SelectItem>
+                                  <SelectItem value="DELETE">DELETE</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        )}
+
+                        {action.type === 'kafka' && (
+                          <div className="space-y-4">
+                            <div>
+                              <Label>Topic</Label>
+                              <Input
+                                value={action.config.topic || ''}
+                                onChange={(e) => {
+                                  const newActions = [...selectedRule.actions];
+                                  newActions[index] = {
+                                    ...action,
+                                    config: {
+                                      ...action.config,
+                                      topic: e.target.value,
+                                    },
+                                  };
+                                  setSelectedRule({
+                                    ...selectedRule,
+                                    actions: newActions,
+                                  });
+                                }}
+                                disabled={!isEditing}
+                              />
+                            </div>
+                            <div>
+                              <Label>Brokers (comma-separated)</Label>
+                              <Input
+                                value={
+                                  Array.isArray(action.config.brokers)
+                                    ? action.config.brokers.join(',')
+                                    : ''
+                                }
+                                onChange={(e) => {
+                                  const newActions = [...selectedRule.actions];
+                                  newActions[index] = {
+                                    ...action,
+                                    config: {
+                                      ...action.config,
+                                      brokers: e.target.value
+                                        .split(',')
+                                        .map((s) => s.trim()),
+                                    },
+                                  };
+                                  setSelectedRule({
+                                    ...selectedRule,
+                                    actions: newActions,
+                                  });
+                                }}
+                                disabled={!isEditing}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {action.type === 'javascript' && (
+                          <div>
+                            <Label>JavaScript Code</Label>
+                            <Textarea
+                              value={action.config.code || ''}
+                              onChange={(e) => {
+                                const newActions = [...selectedRule.actions];
+                                newActions[index] = {
+                                  ...action,
+                                  config: {
+                                    ...action.config,
+                                    code: e.target.value,
+                                  },
+                                };
+                                setSelectedRule({
+                                  ...selectedRule,
+                                  actions: newActions,
+                                });
+                              }}
+                              disabled={!isEditing}
+                              className="font-mono"
+                              rows={10}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           </div>
         ) : (

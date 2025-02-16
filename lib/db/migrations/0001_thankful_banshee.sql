@@ -1,0 +1,1 @@
+ALTER TABLE "filter_rules" ADD COLUMN "enabled" boolean DEFAULT true;
