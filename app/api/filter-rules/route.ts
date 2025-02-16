@@ -1,17 +1,31 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db/drizzle';
+import { db } from '@/lib/db';
 import { filterRules, filterActions } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { z } from 'zod';
+
+const ruleSchema = z.object({
+  name: z.string().min(1),
+  fromPattern: z.string().optional(),
+  toPattern: z.string().optional(),
+  subjectPattern: z.string().optional(),
+  operator: z.enum(['AND', 'OR']).default('AND'),
+  actions: z.array(z.object({
+    type: z.enum(['forward', 'webhook', 'kafka', 'javascript']),
+    config: z.record(z.any()),
+  })).optional(),
+});
 
 export async function GET() {
   try {
     const rules = await db
       .select()
       .from(filterRules)
-      .orderBy(filterRules.priority);
+      .orderBy(filterRules.id);
     
     return NextResponse.json(rules);
   } catch (error) {
+    console.error('Database error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch filter rules' },
       { status: 500 }
@@ -22,23 +36,24 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const validatedData = ruleSchema.parse(body);
+
     const [rule] = await db
       .insert(filterRules)
       .values({
-        name: body.name,
-        fromPattern: body.fromPattern,
-        toPattern: body.toPattern,
-        subjectPattern: body.subjectPattern,
-        bodyPattern: body.bodyPattern,
-        priority: body.priority || 0,
+        name: validatedData.name,
+        fromPattern: validatedData.fromPattern,
+        toPattern: validatedData.toPattern,
+        subjectPattern: validatedData.subjectPattern,
+        operator: validatedData.operator,
       })
       .returning();
 
-    if (body.actions) {
+    if (validatedData.actions?.length) {
       await db.insert(filterActions).values(
-        body.actions.map((action: any) => ({
+        validatedData.actions.map((action) => ({
           ruleId: rule.id,
-          actionType: action.type,
+          type: action.type,
           config: action.config,
         }))
       );
@@ -46,6 +61,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json(rule);
   } catch (error) {
+    console.error('Error creating filter rule:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid request data', details: error.errors },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Failed to create filter rule' },
       { status: 500 }
@@ -57,34 +79,44 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json();
     const { id, ...updateData } = body;
+    const validatedData = ruleSchema.parse(updateData);
 
     const [rule] = await db
       .update(filterRules)
       .set({
-        ...updateData,
+        ...validatedData,
         updatedAt: new Date(),
       })
       .where(eq(filterRules.id, id))
       .returning();
 
-    if (body.actions) {
+    if (validatedData.actions) {
       // Delete existing actions
       await db
         .delete(filterActions)
         .where(eq(filterActions.ruleId, id));
 
       // Insert new actions
-      await db.insert(filterActions).values(
-        body.actions.map((action: any) => ({
-          ruleId: rule.id,
-          actionType: action.type,
-          config: action.config,
-        }))
-      );
+      if (validatedData.actions.length > 0) {
+        await db.insert(filterActions).values(
+          validatedData.actions.map((action) => ({
+            ruleId: rule.id,
+            type: action.type,
+            config: action.config,
+          }))
+        );
+      }
     }
 
     return NextResponse.json(rule);
   } catch (error) {
+    console.error('Error updating filter rule:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid request data', details: error.errors },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Failed to update filter rule' },
       { status: 500 }
@@ -116,6 +148,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('Error deleting filter rule:', error);
     return NextResponse.json(
       { error: 'Failed to delete filter rule' },
       { status: 500 }

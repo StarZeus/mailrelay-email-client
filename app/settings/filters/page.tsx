@@ -136,7 +136,7 @@ export default function FiltersPage() {
           </Button>
         </div>
         <div className="divide-y divide-gray-200">
-          {rules.map((rule) => (
+          {rules?.map((rule) => (
             <div
               key={rule.id}
               className={`p-4 cursor-pointer hover:bg-gray-50 ${
@@ -144,22 +144,13 @@ export default function FiltersPage() {
               }`}
               onClick={() => setSelectedRule(rule)}
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium">{rule.name}</h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Priority: {rule.priority}
-                  </p>
-                </div>
-                <Switch
-                  checked={rule.isEnabled}
-                  onCheckedChange={(checked) => {
-                    handleSave({ ...rule, isEnabled: checked });
-                  }}
-                />
-              </div>
             </div>
           ))}
+          {rules.length === 0 && (
+            <div className="flex-1 flex items-center mt-10 justify-center text-gray-500">
+              No filter rules found
+            </div>
+          )}
         </div>
       </div>
 

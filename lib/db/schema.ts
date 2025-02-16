@@ -10,7 +10,7 @@ import {
   boolean,
   jsonb,
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, Many } from 'drizzle-orm';
 
 export const users = pgTable(
   'users',
@@ -80,23 +80,20 @@ export const threadFolders = pgTable('thread_folders', {
 
 export const filterRules = pgTable('filter_rules', {
   id: serial('id').primaryKey(),
-  name: varchar('name', { length: 100 }).notNull(),
-  fromPattern: varchar('from_pattern', { length: 255 }),
-  toPattern: varchar('to_pattern', { length: 255 }),
-  subjectPattern: varchar('subject_pattern', { length: 255 }),
-  bodyPattern: text('body_pattern'),
-  isEnabled: boolean('is_enabled').default(true),
-  priority: integer('priority').default(0),
+  name: text('name').notNull(),
+  fromPattern: text('from_pattern'),
+  toPattern: text('to_pattern'),
+  subjectPattern: text('subject_pattern'),
+  operator: varchar('operator', { length: 10 }).notNull().default('AND'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export const filterActions = pgTable('filter_actions', {
   id: serial('id').primaryKey(),
-  ruleId: integer('rule_id').references(() => filterRules.id),
-  actionType: varchar('action_type', { length: 50 }).notNull(), // 'forward', 'webhook', 'kafka', 'javascript'
-  config: jsonb('config').notNull(), // Store action-specific configuration
-  isEnabled: boolean('is_enabled').default(true),
+  ruleId: serial('rule_id').references(() => filterRules.id),
+  type: varchar('type', { length: 50 }).notNull(),
+  config: jsonb('config').notNull().default({}),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

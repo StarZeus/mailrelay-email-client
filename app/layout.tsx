@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { NavMenu } from '@/app/components/menu';
-import { ThreadHeader } from '@/app/components/thread-header';
+import { Header } from '@/app/components/header';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -22,7 +22,7 @@ export default function RootLayout({
       <body className="flex h-screen" suppressHydrationWarning>
         <div className="flex flex-col h-full w-full">
           {/* Header */}
-          <ThreadHeader folderName="inbox" count={0} />
+          <Header />
           
           {/* Main Content */}
           <div className="flex flex-1 overflow-hidden">
@@ -33,7 +33,6 @@ export default function RootLayout({
 
             {/* Main Content Area */}
             {children}
-            
           </div>
         </div>
         <Toaster />
