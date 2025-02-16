@@ -1,0 +1,118 @@
+graph TB
+    subgraph "Frontend"
+        WebUI[Web UI]
+        subgraph "Pages"
+            InboxPage[Inbox Page]
+            ProcessedPage[Processed Emails Page]
+            FiltersPage[Filters & Actions Page]
+        end
+    end
+
+    subgraph "Backend Services"
+        SMTP[SMTP Server]
+    end
+
+    subgraph "Database Schema"
+        Users[(Users)]
+        Emails[(Emails)]
+        Attachments[(Attachments)]
+        FilterRules[(Filter Rules)]
+        FilterActions[(Filter Actions)]
+        ProcessedEmails[(Processed Emails)]
+    end
+
+    subgraph "API Routes"
+        EmailsAPI[emails]
+        FilterRulesAPI[filter-rules]
+        ProcessedEmailsAPI[processed-emails]
+    end
+
+    %% Frontend to API Connections
+    InboxPage --> EmailsAPI
+    ProcessedPage --> ProcessedEmailsAPI
+    FiltersPage --> FilterRulesAPI
+
+    %% SMTP Server Flow
+    SMTP -->|Receives Email| Emails
+    SMTP -->|Creates| Attachments
+    SMTP -->|Processes Rules| FilterRules
+    SMTP -->|Executes| FilterActions
+    SMTP -->|Records| ProcessedEmails
+
+    %% API to Database Connections
+    EmailsAPI -->|CRUD| Emails
+    EmailsAPI -->|Read| Attachments
+    FilterRulesAPI -->|CRUD| FilterRules
+    FilterRulesAPI -->|CRUD| FilterActions
+    ProcessedEmailsAPI -->|Read| ProcessedEmails
+    ProcessedEmailsAPI -->|Read| Emails
+    ProcessedEmailsAPI -->|Read| FilterRules
+
+    %% Database Relations
+    Emails -->|has many| Attachments
+    Emails -->|belongs to| Users
+    FilterRules -->|has many| FilterActions
+    FilterRules -->|has many| ProcessedEmails
+    FilterActions -->|has many| ProcessedEmails
+    ProcessedEmails -->|belongs to| Emails
+
+    %% Table Schemas
+    classDef table fill:#f9f,stroke:#333,stroke-width:2px
+    class Users,Emails,Attachments,FilterRules,FilterActions,ProcessedEmails table
+
+    %% Schema Details
+    Users -->|"Columns:
+    - id (PK)
+    - firstName
+    - lastName
+    - email
+    - jobTitle
+    - company
+    - location
+    - avatarUrl"| Users
+
+    Emails -->|"Columns:
+    - id (PK)
+    - fromEmail
+    - toEmail
+    - subject
+    - body
+    - sentDate
+    - read"| Emails
+
+    Attachments -->|"Columns:
+    - id (PK)
+    - emailId (FK)
+    - filename
+    - contentType
+    - size
+    - content
+    - createdAt"| Attachments
+
+    FilterRules -->|"Columns:
+    - id (PK)
+    - name
+    - fromPattern
+    - toPattern
+    - subjectPattern
+    - operator
+    - enabled
+    - createdAt
+    - updatedAt"| FilterRules
+
+    FilterActions -->|"Columns:
+    - id (PK)
+    - ruleId (FK)
+    - type
+    - config
+    - createdAt
+    - updatedAt"| FilterActions
+
+    ProcessedEmails -->|"Columns:
+    - id (PK)
+    - emailId (FK)
+    - ruleId (FK)
+    - actionId (FK)
+    - status
+    - error
+    - processedAt"| ProcessedEmails
