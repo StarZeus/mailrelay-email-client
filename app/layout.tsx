@@ -19,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`bg-white text-gray-800 ${inter.className}`}>
-      <body className="flex h-screen">
+      <body className="flex h-screen" suppressHydrationWarning>
         <div className="flex flex-col h-full w-full">
           {/* Header */}
           <ThreadHeader folderName="inbox" count={0} />
