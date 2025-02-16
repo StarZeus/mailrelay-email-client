@@ -1,0 +1,26 @@
+import { EmailServer } from '../lib/smtp-server';
+
+const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 2525;
+const host = process.env.SMTP_HOST || '0.0.0.0';
+const secure = process.env.SMTP_SECURE === 'true';
+const authOptional = process.env.SMTP_AUTH_OPTIONAL !== 'false';
+
+const server = new EmailServer({
+  port,
+  host,
+  secure,
+  authOptional,
+});
+
+server.start();
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('Received SIGTERM signal');
+  server.stop();
+});
+
+process.on('SIGINT', () => {
+  console.log('Received SIGINT signal');
+  server.stop();
+}); 
