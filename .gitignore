@@ -8,23 +8,37 @@
 
 # testing
 /coverage
+/.nyc_output
+/cypress/screenshots
+/cypress/videos
+/cypress/downloads
+/.cypress
+/cypress.env.json
 
 # next.js
 /.next/
 /out/
+.next-env.local
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
 *.pem
+Thumbs.db
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+.pnpm-debug.log*
 
 # local env files
 .env
@@ -42,25 +56,72 @@ next-env.d.ts
 .vscode/
 *.swp
 *.swo
+.vs/
+*.sublime-workspace
+*.sublime-project
 
 # Docker
 .docker/
 docker-compose.override.yml
+/postgres-data/
 
 # Database
 *.sqlite
 *.sqlite3
+*.db
 /postgres-data/
+/pgdata/
 
 # Logs
 logs
 *.log
+log/
+npm-debug.log*
 
 # Temp files
 .temp
 .tmp
 .cache
+*.bak
+*.backup
+*.swp
+*.tmp
 
-# Cypress
-cypress/screenshots
-cypress/videos
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Test coverage
+coverage/
+.coverage
+coverage.json
+coverage.xml
+*.lcov
+
+# Build output
+dist/
+build/
+out/
+
+# Drizzle
+/drizzle/migrations/.snapshot*
+.drizzle/
+
+# Next.js telemetry
+.next-telemetry/
+
+# Storybook
+storybook-static/
+
+# PWA files
+**/public/sw.js
+**/public/workbox-*.js
+**/public/worker-*.js
+**/public/sw.js.map
+**/public/workbox-*.js.map
+**/public/worker-*.js.map
