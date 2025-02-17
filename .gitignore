@@ -60,3 +60,7 @@ logs
 .temp
 .tmp
 .cache
+
+# Cypress
+cypress/screenshots
+cypress/videos
