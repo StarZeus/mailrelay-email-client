@@ -83,15 +83,16 @@ function InboxContent() {
       {/* Email List */}
       <div className="w-1/3 border-r border-gray-200 overflow-hidden flex flex-col">
         <div className="p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold">Inbox</h2>
+          <h1 className="text-lg font-semibold">Inbox</h1>
         </div>
-        <ScrollArea className="flex-1">
+        <div className="flex-1 overflow-auto" data-testid="email-list">
           <div className="divide-y divide-gray-200">
             {emails?.map((email, i) => (
               <div
                 key={email.id}
                 ref={i === emails.length - 1 ? ref : undefined}
-                className={`px-4 py-2 cursor-pointer hover:bg-gray-50 ${
+                data-testid="email-item"
+                className={`px-4 py-2 cursor-pointer hover:bg-gray-50 relative ${
                   selectedEmail?.id === email.id ? 'bg-gray-50' : ''
                 } ${!email.read ? 'font-semibold' : ''}`}
                 onClick={() => {
@@ -100,13 +101,14 @@ function InboxContent() {
                 }}
               >
                 <div className="flex justify-between items-start mb-1">
-                  <span className="text-sm">{email.fromEmail}</span>
+                  <span className="text-sm" data-testid="email-sender">{email.fromEmail}</span>
                   <span className="text-xs text-gray-500">
                     {format(new Date(email.receivedAt), 'MMM d, h:mm a')}
                   </span>
                 </div>
-                <div className="text-sm font-medium mb-1">{email.subject}</div>
+                <div className="text-sm font-medium mb-1" data-testid="email-subject">{email.subject}</div>
                 <div className="text-sm text-gray-500 truncate">{email.body}</div>
+                {!email.read && <div data-testid="unread-indicator" className="w-2 h-2 rounded-full bg-blue-500 absolute top-2 right-2" />}
               </div>
             ))}
             {loading &&
@@ -123,15 +125,15 @@ function InboxContent() {
                 </div>
               )}
           </div>
-        </ScrollArea>
+        </div>
       </div>
 
       {/* Email Details */}
-      <div className="flex-1 overflow-hidden flex flex-col">
+      <div className="flex-1 overflow-hidden flex flex-col" data-testid="email-detail">
         {selectedEmail ? (
           <>
             <div className="p-6 border-b border-gray-200">
-              <h1 className="text-2xl font-semibold mb-4">{selectedEmail.subject}</h1>
+              <h1 className="text-2xl font-semibold mb-4" data-testid="email-detail-subject">{selectedEmail.subject}</h1>
               <div className="flex justify-between items-center text-sm text-gray-500">
                 <div>
                   <div>From: {selectedEmail.fromEmail}</div>
@@ -144,7 +146,7 @@ function InboxContent() {
             </div>
             <ScrollArea className="flex-1 p-6">
               <div className="max-w-3xl">
-                <div className="prose">{selectedEmail.body}</div>
+                <div className="prose" data-testid="email-detail-content">{selectedEmail.body}</div>
               </div>
             </ScrollArea>
           </>

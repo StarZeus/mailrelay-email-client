@@ -133,7 +133,7 @@ export default function FiltersPage() {
       {/* Rules List */}
       <div className="w-[400px] border-r border-gray-200 overflow-y-auto">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-lg font-semibold">Filter Rules</h2>
+          <h1 className="text-lg font-semibold">Filter Rules</h1>
           <Button 
             size="sm"
             onClick={() => {
@@ -149,13 +149,14 @@ export default function FiltersPage() {
               setIsEditing(true);
             }}
           >
-            Add Rule
+            New Rule
           </Button>
         </div>
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-200" data-testid="filter-list">
           {rules?.map((rule) => (
             <div
               key={rule.id}
+              data-testid="filter-item"
               className={`p-4 cursor-pointer hover:bg-gray-50 ${
                 selectedRule?.id === rule.id ? 'bg-gray-50' : ''
               }`}
@@ -163,7 +164,19 @@ export default function FiltersPage() {
             >
               <div className="flex items-center justify-between">
                 <span>{rule.name}</span>
-                <div className="text-sm text-gray-500">{rule?.actions?.length} actions</div>
+                <div className="flex items-center gap-2">
+                  <div className="text-sm text-gray-500">{rule?.actions?.length} actions</div>
+                  <button
+                    data-testid="toggle-status"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggle(rule.id);
+                    }}
+                    className={`w-3 h-3 rounded-full ${
+                      rule.isEnabled ? 'bg-green-500' : 'bg-red-500'
+                    }`}
+                  />
+                </div>
               </div>
             </div>
           ))}
@@ -184,13 +197,6 @@ export default function FiltersPage() {
                 <h2 className="text-lg font-semibold">
                   {isEditing ? 'Edit Rule' : 'Rule Details'}
                 </h2>
-                <div className="flex items-center gap-2">
-                  <Switch 
-                    checked={selectedRule?.isEnabled} 
-                    onCheckedChange={() => handleToggle(selectedRule?.id)} 
-                  />
-                  <Label>Enabled</Label>
-                </div>
               </div>
               <div className="space-x-2">
                 {isEditing ? (
@@ -207,6 +213,7 @@ export default function FiltersPage() {
                     </Button>
                     <Button
                       size="sm"
+                      type="submit"
                       onClick={() => handleSave(selectedRule)}
                     >
                       Save
@@ -224,7 +231,11 @@ export default function FiltersPage() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => handleDelete(selectedRule.id)}
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this rule?')) {
+                          handleDelete(selectedRule.id);
+                        }
+                      }}
                     >
                       Delete
                     </Button>
@@ -233,12 +244,16 @@ export default function FiltersPage() {
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
+            <form data-testid="filter-form" className="p-6 space-y-6" onSubmit={(e) => {
+              e.preventDefault();
+              handleSave(selectedRule);
+            }}>
               {/* Rule Settings */}
               <div className="space-y-4">
                 <div>
                   <Label>Name</Label>
                   <Input
+                    name="name"
                     value={selectedRule.name}
                     onChange={(e) =>
                       setSelectedRule({
@@ -253,6 +268,7 @@ export default function FiltersPage() {
                 <div>
                   <Label>From Pattern</Label>
                   <Input
+                    name="fromPattern"
                     value={selectedRule.fromPattern}
                     onChange={(e) =>
                       setSelectedRule({
@@ -267,6 +283,7 @@ export default function FiltersPage() {
                 <div>
                   <Label>To Pattern</Label>
                   <Input
+                    name="toPattern"
                     value={selectedRule.toPattern}
                     onChange={(e) =>
                       setSelectedRule({
@@ -281,6 +298,7 @@ export default function FiltersPage() {
                 <div>
                   <Label>Subject Pattern</Label>
                   <Input
+                    name="condition"
                     value={selectedRule.subjectPattern}
                     onChange={(e) =>
                       setSelectedRule({
@@ -291,6 +309,11 @@ export default function FiltersPage() {
                     disabled={!isEditing}
                   />
                 </div>
+                {isEditing && !selectedRule.name && (
+                  <div data-testid="error-message" className="text-red-500">
+                    Name is required
+                  </div>
+                )}
               </div>
 
               {/* Actions */}
@@ -299,6 +322,7 @@ export default function FiltersPage() {
                   <h3 className="text-lg font-semibold">Actions</h3>
                   {isEditing && (
                     <Button
+                      type="button"
                       onClick={() => {
                         setSelectedRule({
                           ...selectedRule,
@@ -534,7 +558,7 @@ export default function FiltersPage() {
                   </Card>
                 ))}
               </div>
-            </div>
+            </form>
           </div>
         ) : (
           <div className="h-full flex items-center justify-center text-gray-500">

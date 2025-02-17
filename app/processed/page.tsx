@@ -78,7 +78,7 @@ function ProcessedEmailsContent() {
         <div className="p-4 border-b border-gray-200">
           <h1 className="text-lg font-semibold">Processed Emails</h1>
         </div>
-        <ScrollArea className="flex-1">
+        <div className="flex-1 overflow-auto" data-testid="rules-list">
           <div className="divide-y divide-gray-200">
             {loading ? (
               <div className="flex justify-center py-4">
@@ -92,7 +92,7 @@ function ProcessedEmailsContent() {
                   onOpenChange={() => toggleRule(ruleName)}
                   className="p-2"
                 >
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-gray-50 rounded">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-gray-50 rounded" data-testid="rule-item">
                     <div className="flex items-center gap-2">
                       <ChevronRight 
                         className={`h-4 w-4 transition-transform ${
@@ -106,10 +106,11 @@ function ProcessedEmailsContent() {
                     </span>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <div className="space-y-1 mt-1 ml-6">
+                    <div className="space-y-1 mt-1 ml-6" data-testid="processed-emails">
                       {ruleEmails.map((email) => (
                         <div
                           key={email.id}
+                          data-testid="email-item"
                           onClick={() => setSelectedEmail(email)}
                           className={`p-2 rounded cursor-pointer hover:bg-gray-50 ${
                             selectedEmail?.id === email.id ? 'bg-gray-50' : ''
@@ -120,7 +121,7 @@ function ProcessedEmailsContent() {
                             <span>{email.email.fromEmail}</span>
                             <span className={`px-1.5 py-0.5 rounded-full text-xs ${
                               email.status === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }`}>
+                            }`} data-testid="processing-status">
                               {email.status}
                             </span>
                           </div>
@@ -132,31 +133,31 @@ function ProcessedEmailsContent() {
               ))
             )}
           </div>
-        </ScrollArea>
+        </div>
       </div>
 
       {/* Right Column - Email Details */}
-      <div className="flex-1 overflow-hidden flex flex-col">
+      <div className="flex-1 overflow-hidden flex flex-col" data-testid="email-detail">
         {selectedEmail ? (
           <>
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-2xl font-semibold mb-4">{selectedEmail.email.subject}</h2>
+              <h2 className="text-2xl font-semibold mb-4" data-testid="email-detail-subject">{selectedEmail.email.subject}</h2>
               <div className="flex justify-between items-start text-sm text-gray-500">
                 <div>
                   <div>From: {selectedEmail.email.fromEmail}</div>
                   <div>To: {selectedEmail.email.toEmail}</div>
-                  <div className="mt-2">
+                  <div className="mt-2" data-testid="rule-details">
                     <span className="text-blue-600">Rule: {selectedEmail.ruleName}</span>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right" data-testid="rule-actions">
                   <div>{format(new Date(selectedEmail.email.sentDate), 'MMM d, yyyy h:mm a')}</div>
                   <div className="mt-1">
                     Processed: {format(new Date(selectedEmail.processedAt), 'MMM d, h:mm a')}
                   </div>
                   <span className={`mt-2 inline-block px-2 py-1 rounded-full text-xs ${
                     selectedEmail.status === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
+                  }`} data-testid="processing-details">
                     {selectedEmail.status}
                   </span>
                 </div>
@@ -164,7 +165,7 @@ function ProcessedEmailsContent() {
             </div>
             <ScrollArea className="flex-1 p-6">
               <div className="max-w-3xl">
-                <div className="prose">{selectedEmail.email.body}</div>
+                <div className="prose" data-testid="email-detail-content">{selectedEmail.email.body}</div>
               </div>
             </ScrollArea>
           </>
