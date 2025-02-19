@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
+import { TrashIcon } from 'lucide-react';
 
 interface FilterRule {
   id: number;
@@ -17,9 +18,8 @@ interface FilterRule {
   fromPattern: string | null;
   toPattern: string | null;
   subjectPattern: string | null;
-  bodyPattern: string | null;
   enabled: boolean;
-  priority: number;
+  operator: 'AND' | 'OR';
   actions: FilterAction[];
 }
 
@@ -109,6 +109,35 @@ export default function FiltersPage() {
     }
   }
 
+  async function handleDeleteAction(ruleId: number, actionId: number) {
+    try {
+      const response = await fetch(`/api/filter-rules/actions?ruleId=${ruleId}&actionId=${actionId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Failed to delete action');
+
+      setSelectedRule(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          actions: prev.actions.filter(a => a.id !== actionId)
+        };
+      });
+
+      toast({
+        title: 'Success',
+        description: 'Action deleted successfully',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete action',
+        variant: 'destructive',
+      });
+    }
+  }
+
   async function handleToggle(id: number) {
     try {
       const response = await fetch(`/api/filter-rules`, {
@@ -143,9 +172,8 @@ export default function FiltersPage() {
                 fromPattern: '',
                 toPattern: '',
                 subjectPattern: '',
-                bodyPattern: '',
                 enabled: true,
-                priority: 0,
+                operator: 'AND',
                 actions: [],
               });
               setIsEditing(true);
@@ -238,23 +266,43 @@ export default function FiltersPage() {
 
             <form data-testid="filter-form" className="p-6 space-y-6" onSubmit={(e) => {
               e.preventDefault();
-              handleSave(selectedRule);
             }}>
               {/* Rule Settings */}
               <div className="space-y-4">
                 <div>
                   <Label>Name</Label>
                   <Input
-                    name="name"
-                    value={selectedRule?.name ?? ''}
+                    value={selectedRule.name}
                     onChange={(e) =>
-                      setSelectedRule(rule => rule ? {
-                        ...rule,
+                      setSelectedRule({
+                        ...selectedRule,
                         name: e.target.value,
-                      } : null)
+                      })
                     }
                     disabled={!isEditing}
                   />
+                </div>
+
+                <div>
+                  <Label>Logical Operator</Label>
+                  <Select
+                    value={selectedRule.operator}
+                    onValueChange={(value: 'AND' | 'OR') =>
+                      setSelectedRule({
+                        ...selectedRule,
+                        operator: value,
+                      })
+                    }
+                    disabled={!isEditing}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AND">Match ALL conditions (AND)</SelectItem>
+                      <SelectItem value="OR">Match ANY condition (OR)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
@@ -376,19 +424,13 @@ export default function FiltersPage() {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => {
-                              const newActions = selectedRule.actions.filter(
-                                (_, i) => i !== index
-                              );
-                              setSelectedRule({
-                                ...selectedRule,
-                                actions: newActions,
-                              });
-                            }}
+                            className="ml-2"
+                            onClick={() => handleDeleteAction(selectedRule.id, action.id)}
                             disabled={!isEditing}
                           >
-                            Remove
+                            <TrashIcon className="w-4 h-4" />
                           </Button>
+
                         </div>
 
                         {action.type === 'forward' && (

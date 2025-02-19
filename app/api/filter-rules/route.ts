@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { filterRules, filterActions } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { filterRules, filterActions, processedEmails } from '@/lib/db/schema';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 const ruleSchema = z.object({
@@ -23,8 +23,21 @@ export async function GET() {
       .select()
       .from(filterRules)
       .orderBy(filterRules.id);
-    
-    return NextResponse.json(rules);
+
+    const actions = await db
+      .select() 
+      .from(filterActions)
+      .orderBy(filterActions.id);
+
+    const rulesWithActions = rules.map(rule => {
+      const actionsForRule = actions.filter(action => action.ruleId === rule.id);
+      return {
+        ...rule,
+        actions: actionsForRule
+      };
+    });
+
+    return NextResponse.json(rulesWithActions);
   } catch (error) {
     console.error('Database error:', error);
     return NextResponse.json(
@@ -92,21 +105,7 @@ export async function PUT(request: Request) {
       .returning();
 
     if (validatedData.actions) {
-      // Delete existing actions
-      await db
-        .delete(filterActions)
-        .where(eq(filterActions.ruleId, id));
-
-      // Insert new actions
-      if (validatedData.actions.length > 0) {
-        await db.insert(filterActions).values(
-          validatedData.actions.map((action) => ({
-            ruleId: rule.id,
-            type: action.type,
-            config: action.config,
-          }))
-        );
-      }
+      await insertOrUpdateActions(id, validatedData.actions);
     }
 
     return NextResponse.json(rule);
@@ -123,6 +122,31 @@ export async function PUT(request: Request) {
       { status: 500 }
     );
   }
+}
+
+async function insertOrUpdateActions(ruleId: number, actions: any[]) {
+  if (!actions?.length) return;
+
+  // Use Promise.all to handle async operations properly
+  await Promise.all(actions.map(async (action) => {
+    if (action.id) {
+      return db
+        .update(filterActions)
+        .set({
+          type: action.type,
+          config: action.config,
+        })
+        .where(eq(filterActions.id, action.id));
+    } else {
+      return db
+        .insert(filterActions)
+        .values({
+          ruleId: ruleId,
+          type: action.type,
+          config: action.config,
+        });
+    }
+  }));
 }
 
 export async function DELETE(request: Request) {
@@ -156,3 +180,23 @@ export async function DELETE(request: Request) {
     );
   }
 } 
+
+export async function deleteActions(ruleId: number, actionId: number) {
+  // Delete all actions for the rule and cascade delete processed emails
+
+  try {
+    await db
+      .delete(processedEmails)
+      .where(eq(processedEmails.actionId, actionId));
+
+    await db
+      .delete(filterActions)
+      .where(and(eq(filterActions.ruleId, ruleId), eq(filterActions.id, actionId)));
+  } catch (error) {
+    console.error('Error deleting actions:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete actions' },
+      { status: 500 }
+    );
+  }
+}
