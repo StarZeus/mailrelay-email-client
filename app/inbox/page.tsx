@@ -92,8 +92,8 @@ function InboxContent() {
                 key={email.id}
                 ref={i === emails.length - 1 ? ref : undefined}
                 data-testid="email-item"
-                className={`px-4 py-2 cursor-pointer hover:bg-gray-50 relative ${
-                  selectedEmail?.id === email.id ? 'bg-gray-50' : ''
+                className={`px-4 py-2 cursor-pointer hover:bg-gray-50 ${
+                  selectedEmail?.id === email.id ? 'bg-blue-50 border-l-4 border-l-gray-200' : ''
                 } ${!email.read ? 'font-semibold' : ''}`}
                 onClick={() => {
                   setSelectedEmail(email);

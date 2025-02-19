@@ -112,8 +112,8 @@ function ProcessedEmailsContent() {
                           key={email.id}
                           data-testid="email-item"
                           onClick={() => setSelectedEmail(email)}
-                          className={`p-2 rounded cursor-pointer hover:bg-gray-50 ${
-                            selectedEmail?.id === email.id ? 'bg-gray-50' : ''
+                          className={`p-4 cursor-pointer hover:bg-gray-50 ${
+                            selectedEmail?.id === email.id ? 'bg-blue-50 border-l-4 border-l-gray-200' : ''
                           }`}
                         >
                           <div className="text-sm font-medium">{email.email.subject}</div>
