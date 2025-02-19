@@ -29,11 +29,16 @@ WORKDIR /app
 
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV HOST 0.0.0.0
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Install tsx for TypeScript execution
+RUN npm install -g tsx
+
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/server.ts ./server.ts
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
@@ -52,5 +57,5 @@ EXPOSE 2525
 ENV PORT 3000
 ENV SMTP_PORT 2525
 
-# Start the application based on APP_MODE
-CMD ["node", "server.js"] 
+# Start the application using tsx directly
+CMD ["tsx", "server.ts"] 
