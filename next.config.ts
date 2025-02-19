@@ -12,6 +12,7 @@ const config: NextConfig = {
     dynamicIO: true,
     serverSourceMaps: true,
   },
+  output: 'standalone',
   async redirects() {
     return [
       {
