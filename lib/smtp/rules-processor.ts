@@ -1,19 +1,18 @@
 import { db } from '../db/drizzle';
-import { filterRules, filterActions, processedEmails, emails } from '../db/schema';
+import { filterRules, filterActions, processedEmails, emails, attachments } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import nodemailer from 'nodemailer';
 import { Kafka } from 'kafkajs';
-import axios from 'axios';
 import { VM } from 'vm2';
 
 interface Email {
   id: number;
-  threadId: number;
-  senderId: number;
-  recipientId: number;
-  subject: string;
-  body: string;
+  fromEmail: string;
+  toEmail: string;
+  subject: string | null;
+  body: string | null;
   sentDate: Date;
+  read: boolean;
 }
 
 async function processEmailWithRules(email: Email) {
@@ -21,8 +20,8 @@ async function processEmailWithRules(email: Email) {
   const rules = await db
     .select()
     .from(filterRules)
-    .where(eq(filterRules.isEnabled, true))
-    .orderBy(filterRules.priority);
+    .where(eq(filterRules.enabled, true))
+    .orderBy(filterRules.createdAt);
 
   for (const rule of rules) {
     // Check if email matches rule patterns
@@ -31,8 +30,7 @@ async function processEmailWithRules(email: Email) {
       const actions = await db
         .select()
         .from(filterActions)
-        .where(eq(filterActions.ruleId, rule.id))
-        .where(eq(filterActions.isEnabled, true));
+        .where(eq(filterActions.ruleId, rule.id));
 
       // Process each action
       for (const action of actions) {
@@ -45,6 +43,7 @@ async function processEmailWithRules(email: Email) {
             ruleId: rule.id,
             actionId: action.id,
             status: 'success',
+            processedAt: new Date(),
           });
         } catch (error) {
           // Record failed processing
@@ -54,6 +53,7 @@ async function processEmailWithRules(email: Email) {
             actionId: action.id,
             status: 'failed',
             error: error instanceof Error ? error.message : String(error),
+            processedAt: new Date(),
           });
         }
       }
@@ -63,43 +63,33 @@ async function processEmailWithRules(email: Email) {
 
 async function matchesRule(email: Email, rule: typeof filterRules.$inferSelect) {
   const matchPatterns = {
-    fromPattern: async () => {
+    fromPattern: () => {
       if (!rule.fromPattern) return true;
-      const [sender] = await db
-        .select()
-        .from(emails)
-        .where(eq(emails.id, email.id));
-      return new RegExp(rule.fromPattern).test(sender.subject || '');
+      return new RegExp(rule.fromPattern).test(email.fromEmail);
     },
-    toPattern: async () => {
+    toPattern: () => {
       if (!rule.toPattern) return true;
-      const [recipient] = await db
-        .select()
-        .from(emails)
-        .where(eq(emails.id, email.id));
-      return new RegExp(rule.toPattern).test(recipient.subject || '');
+      return new RegExp(rule.toPattern).test(email.toEmail);
     },
     subjectPattern: () => {
       if (!rule.subjectPattern) return true;
-      return new RegExp(rule.subjectPattern).test(email.subject);
-    },
-    bodyPattern: () => {
-      if (!rule.bodyPattern) return true;
-      return new RegExp(rule.bodyPattern).test(email.body);
-    },
+      return new RegExp(rule.subjectPattern).test(email.subject || '');
+    }
   };
 
   const results = await Promise.all(
     Object.values(matchPatterns).map(pattern => pattern())
   );
 
-  return results.every(result => result);
+  return rule.operator === 'OR' 
+    ? results.some(result => result)
+    : results.every(result => result);
 }
 
 async function processAction(email: Email, action: typeof filterActions.$inferSelect) {
   const config = action.config as Record<string, any>;
 
-  switch (action.actionType) {
+  switch (action.type) {
     case 'forward':
       await forwardEmail(email, config.forwardTo);
       break;
@@ -113,11 +103,17 @@ async function processAction(email: Email, action: typeof filterActions.$inferSe
       await runJavaScript(email, config.code);
       break;
     default:
-      throw new Error(`Unknown action type: ${action.actionType}`);
+      throw new Error(`Unknown action type: ${action.type}`);
   }
 }
 
 async function forwardEmail(email: Email, forwardTo: string) {
+  // Get attachments for this email
+  const emailAttachments = await db
+    .select()
+    .from(attachments)
+    .where(eq(attachments.emailId, email.id));
+
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587'),
@@ -131,45 +127,73 @@ async function forwardEmail(email: Email, forwardTo: string) {
   await transporter.sendMail({
     from: process.env.SMTP_FROM,
     to: forwardTo,
-    subject: email.subject,
-    text: email.body,
+    subject: email.subject || '',
+    text: email.body || '',
+    attachments: emailAttachments.map(att => ({
+      filename: att.filename,
+      content: Buffer.from(att.content, 'hex'),
+      contentType: att.contentType,
+    })),
   });
 }
 
 async function callWebhook(email: Email, url: string, method: string) {
-  await axios({
-    method,
-    url,
-    data: {
-      id: email.id,
-      subject: email.subject,
-      body: email.body,
-      sentDate: email.sentDate,
-    },
-  });
+  const emailAttachments = await db
+    .select()
+    .from(attachments)
+    .where(eq(attachments.emailId, email.id));
+
+    //Replace the axios call with fetch
+    await fetch(url, {
+        method,
+        body: JSON.stringify({
+            id: email.id,
+            fromEmail: email.fromEmail,
+            toEmail: email.toEmail,
+            subject: email.subject,
+            body: email.body,
+            sentDate: email.sentDate,
+            attachments: emailAttachments.map(att => ({
+                filename: att.filename,
+                contentType: att.contentType,
+                size: att.size,
+            })),
+        }),
+    });
 }
 
 async function sendToKafka(email: Email, topic: string, brokers: string[]) {
   const kafka = new Kafka({
-    clientId: 'email-processor',
+    clientId: process.env.KAFKA_CLIENT_ID || 'email-processor',
     brokers,
   });
 
   const producer = kafka.producer();
   await producer.connect();
 
+  const emailAttachments = await db
+    .select()
+    .from(attachments)
+    .where(eq(attachments.emailId, email.id));
+
   await producer.send({
     topic,
-    messages: [
-      {
-        value: JSON.stringify({
-          id: email.id,
-          subject: email.subject,
-          body: email.body,
-          sentDate: email.sentDate,
-        }),
-      },
-    ],
+    messages: [{
+      key: email.id.toString(),
+      value: JSON.stringify({
+        id: email.id,
+        fromEmail: email.fromEmail,
+        toEmail: email.toEmail,
+        subject: email.subject,
+        body: email.body,
+        sentDate: email.sentDate,
+        attachments: emailAttachments.map(att => ({
+          filename: att.filename,
+          contentType: att.contentType,
+          size: att.size,
+        })),
+      }),
+    }],
   });
 
   await producer.disconnect();
@@ -181,14 +205,20 @@ async function runJavaScript(email: Email, code: string) {
     sandbox: {
       email: {
         id: email.id,
+        fromEmail: email.fromEmail,
+        toEmail: email.toEmail,
         subject: email.subject,
         body: email.body,
         sentDate: email.sentDate,
       },
+      console: {
+        log: console.log,
+        error: console.error,
+      },
     },
   });
 
-  await vm.run(code);
+  return vm.run(code);
 }
 
 export { processEmailWithRules }; 

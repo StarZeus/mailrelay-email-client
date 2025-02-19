@@ -18,7 +18,7 @@ interface Email {
   read: boolean;
 }
 
-function InboxContent() {
+function EmailList() {
   const [emails, setEmails] = useState<Email[]>([]);
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
   const [loading, setLoading] = useState(true);
@@ -163,7 +163,7 @@ function InboxContent() {
 export default function InboxPage() {
   return (
     <ClientWrapper>
-      <InboxContent />
+      <EmailList />
     </ClientWrapper>
   );
 } 

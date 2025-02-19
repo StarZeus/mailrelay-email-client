@@ -1,4 +1,4 @@
-import { EmailServer } from '../lib/smtp-server';
+import { EmailServer } from '../lib/smtp/smtp-server';
 
 const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 2525;
 const host = process.env.SMTP_HOST || '0.0.0.0';

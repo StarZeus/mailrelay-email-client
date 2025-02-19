@@ -1,8 +1,7 @@
 import { SMTPServer } from 'smtp-server';
 import { simpleParser } from 'mailparser';
-import { db } from './db';
-import { emails, users } from './db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '../db';
+import { emails, attachments } from '../db/schema';
 
 interface SMTPServerConfig {
   port: number;
@@ -31,53 +30,32 @@ export class EmailServer {
       // Parse email from stream
       const email = await simpleParser(stream);
       
-      // Get or create sender
-      const fromEmail = email.from?.value?.[0]?.address || '';
-      let [sender] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, fromEmail))
-        .limit(1);
-
-      if (!sender) {
-        [sender] = await db
-          .insert(users)
-          .values({
-            email: fromEmail,
-            firstName: email.from?.value?.[0]?.name,
-          })
-          .returning();
-      }
-
-      // Get or create recipient
-      const toEmail = email.to?.value?.[0]?.address || '';
-      let [recipient] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, toEmail))
-        .limit(1);
-
-      if (!recipient) {
-        [recipient] = await db
-          .insert(users)
-          .values({
-            email: toEmail,
-            firstName: email.to?.value?.[0]?.name,
-          })
-          .returning();
-      }
-
-      // Store email in database
-      await db
+      // Store email in database and get the ID
+      const [savedEmail] = await db
         .insert(emails)
         .values({
+          fromEmail: email.from?.value?.[0]?.address || '',
+          toEmail: Array.isArray(email.to) ? email.to.map((to: any) => to.value).join(',') : email.to?.value || '',
           subject: email.subject || '',
-          body: email.text || email.html || '',
-          senderId: sender.id,
-          recipientId: recipient.id,
+          body: email.html || email.textAsHtml || email.text || '',
           sentDate: email.date || new Date(),
           read: false,
-        });
+        })
+        .returning();
+
+      // Handle attachments if present
+      if (email.attachments && email.attachments.length > 0) {
+        const attachmentValues = email.attachments.map(attachment => ({
+          emailId: savedEmail.id,
+          filename: attachment.filename || 'unnamed',
+          contentType: attachment.contentType || 'application/octet-stream',
+          size: attachment.size || 0,
+          content: attachment.content.toString('hex'),
+        }));
+
+        // Store attachments in database
+        await db.insert(attachments).values(attachmentValues);
+      }
 
       callback();
     } catch (error) {

@@ -11,14 +11,14 @@
 ## 2. SMTP Server Implementation
 - [x] Basic SMTP server setup with smtp-server package
 - [x] Implement email parsing with mailparser
-- [ ] Implement attachment handling
-  - [ ] Store attachments in database with proper encoding
-  - [ ] Handle large attachments efficiently
-  - [ ] Add attachment size limits and validation
-- [ ] Email Processing Pipeline
-  - [ ] Parse incoming emails
-  - [ ] Extract metadata (subject, from, to, date)
-  - [ ] Store in database
+- [x] Implement attachment handling
+  - [x] Store attachments in database with proper encoding
+  - [x] Handle large attachments efficiently
+  - [x] Add attachment size limits and validation
+- [x] Email Processing Pipeline
+  - [x] Parse incoming emails
+  - [x] Extract metadata (subject, from, to, date)
+  - [x] Store in database
   - [ ] Trigger rule processing
 - [ ] Rule Processing Engine
   - [ ] Pattern matching implementation
