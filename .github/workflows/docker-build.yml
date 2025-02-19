@@ -16,6 +16,8 @@ jobs:
     env:
       DOCKERHUB_USERNAME: ${{ secrets.USERNAME }}
       DOCKERHUB_PASSWORD: ${{ secrets.PASSWORD }}
+      REGISTRY: docker.io
+      IMAGE_NAME: ${{ github.repository }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -35,6 +37,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
+
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Build and push Docker image
