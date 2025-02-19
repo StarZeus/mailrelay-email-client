@@ -71,8 +71,8 @@ export class EmailServer {
   }
 
   public start() {
-    this.server.listen(this.config.port, this.config.host || '0.0.0.0', () => {
-      console.log(`SMTP server running on port ${this.config.port}`);
+    return this.server.listen(this.config.port, this.config.host || '0.0.0.0', () => {
+      console.log(`> SMTP server URL: http://${this.config.host || 'localhost'}:${this.config.port}`);
     });
   }
 

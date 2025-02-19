@@ -19,6 +19,7 @@ COPY . .
 # Learn more here: https://nextjs.org/telemetry
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV POSTGRES_URL=postgres://postgres:postgres@localhost:54322/postgres
 
 RUN npm install -g pnpm && pnpm build
 
@@ -49,6 +50,7 @@ EXPOSE 3000
 EXPOSE 2525
 
 ENV PORT 3000
+ENV SMTP_PORT 2525
 
 # Start the application based on APP_MODE
 CMD ["node", "server.js"] 

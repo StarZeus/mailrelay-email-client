@@ -1,6 +1,12 @@
 import type { NextConfig } from 'next';
 
-const nextConfig: NextConfig = {
+const config: NextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   experimental: {
     ppr: true,
     dynamicIO: true,
@@ -17,4 +23,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default config;

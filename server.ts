@@ -6,6 +6,8 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Get app mode from environment variable APP_MODE = smtp or smtp-client-ui or smtp-with-client-ui
+const mode = process.env.APP_MODE || 'smtp';
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = parseInt(process.env.PORT || '3000', 10);
@@ -25,27 +27,33 @@ const smtpServer = new EmailServer({
 
 async function start() {
   try {
-    // Prepare Next.js
-    await app.prepare();
+    if (mode === 'smtp-client-ui' || mode === 'smtp-with-client-ui') {
+      // Prepare Next.js
+      await app.prepare();
 
-    // Create HTTP server
-    createServer(async (req, res) => {
-      try {
-        const parsedUrl = parse(req.url!, true);
-        await handle(req, res, parsedUrl);
-      } catch (err) {
-        console.error('Error occurred handling request:', err);
-        res.statusCode = 500;
-        res.end('Internal Server Error');
-      }
-    }).listen(port, () => {
-      console.log(
-        `> Next.js server ready on http://${hostname}:${port}`
-      );
-    });
+      // Create HTTP server
+      createServer(async (req, res) => {
+        try {
+          const parsedUrl = parse(req.url!, true);
+          await handle(req, res, parsedUrl);
+        } catch (err) {
+          console.error('Error occurred handling request:', err);
+          res.statusCode = 500;
+          res.end('Internal Server Error');
+        }
+      }).listen(port, () => {
+        console.log(
+          `**************************************************`
+        );
+        // Pretty print server url
+        console.log(`> Next.js server URL: http://${hostname}:${port}`);
+      });
+    }
 
-    // Start SMTP server
-    smtpServer.start();
+    if (mode === 'smtp' || mode === 'smtp-with-client-ui') {
+      // Start SMTP server
+      await smtpServer.start();
+    }
 
     // Handle graceful shutdown
     const shutdown = () => {
