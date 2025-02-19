@@ -12,6 +12,10 @@ env:
 
 jobs:
   build-and-push:
+    environment: DOCKERHUB
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.USERNAME }}
+      DOCKERHUB_PASSWORD: ${{ secrets.PASSWORD }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -24,9 +28,8 @@ jobs:
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_PASSWORD }}
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta

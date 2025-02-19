@@ -1,5 +1,15 @@
 # Mail Relay Email Client
 
+[![Next.js](https://img.shields.io/badge/Next.js-15.0-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.0-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](https://www.docker.com/)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/starzeus/mailrelay-email-client/docker-build.yml?branch=main&logo=github)](https://github.com/starzeus/mailrelay-email-client/actions)
+[![Jest](https://img.shields.io/badge/Jest-Tested-C21325?logo=jest)](https://jestjs.io/)
+[![Cypress](https://img.shields.io/badge/Cypress-Tested-17202C?logo=cypress)](https://www.cypress.io/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A modern email client with SMTP server capabilities and advanced email filtering rules.
 
 ## Features
@@ -26,7 +36,7 @@ A modern email client with SMTP server capabilities and advanced email filtering
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/mailrelay-email-client.git
+   git clone https://github.com/starzeus/mailrelay-email-client.git
    cd mailrelay-email-client
    ```
 
