@@ -10,6 +10,7 @@ const ruleSchema = z.object({
   toPattern: z.string().optional(),
   subjectPattern: z.string().optional(),
   operator: z.enum(['AND', 'OR']).default('AND').optional(),
+  enabled: z.boolean().optional(),
   actions: z.array(z.object({
     type: z.enum(['forward', 'webhook', 'kafka', 'javascript']),
     config: z.record(z.any()),

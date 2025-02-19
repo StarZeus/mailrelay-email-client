@@ -12,7 +12,7 @@ export function NavMenu() {
         href="/inbox"
         className={`flex items-center space-x-1 px-6 py-4 rounded ${
           pathname === '/inbox'
-            ? 'bg-accent text-accent-foreground'
+            ? 'bg-blue-50 text-blue-700 font-medium'
             : 'text-gray-700 hover:bg-gray-100'
         }`}
       >
@@ -23,7 +23,7 @@ export function NavMenu() {
         href="/processed"
         className={`flex items-center space-x-1 px-6 py-4 rounded ${
           pathname === '/processed'
-            ? 'bg-accent text-accent-foreground'
+            ? 'bg-blue-50 text-blue-700 font-medium'
             : 'text-gray-700 hover:bg-gray-100'
         }`}
       >
@@ -34,7 +34,7 @@ export function NavMenu() {
         href="/settings/filters"
         className={`flex items-center space-x-1 px-6 py-4 rounded ${
           pathname === '/settings/filters'
-            ? 'bg-accent text-accent-foreground'
+            ? 'bg-blue-50 text-blue-700 font-medium'
             : 'text-gray-700 hover:bg-gray-100'
         }`}
       >

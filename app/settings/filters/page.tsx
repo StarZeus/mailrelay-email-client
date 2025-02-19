@@ -14,11 +14,11 @@ import { toast } from '@/components/ui/use-toast';
 interface FilterRule {
   id: number;
   name: string;
-  fromPattern: string;
-  toPattern: string;
-  subjectPattern: string;
-  bodyPattern: string;
-  isEnabled: boolean;
+  fromPattern: string | null;
+  toPattern: string | null;
+  subjectPattern: string | null;
+  bodyPattern: string | null;
+  enabled: boolean;
   priority: number;
   actions: FilterAction[];
 }
@@ -114,7 +114,7 @@ export default function FiltersPage() {
       const response = await fetch(`/api/filter-rules`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, enabled: !selectedRule?.isEnabled })
+        body: JSON.stringify({ id, enabled: !selectedRule?.enabled })
       });
       if (!response.ok) throw new Error('Failed to toggle rule');
 
@@ -133,7 +133,7 @@ export default function FiltersPage() {
       {/* Rules List */}
       <div className="w-[400px] border-r border-gray-200 overflow-y-auto">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-          <h1 className="text-lg font-semibold">Filter Rules</h1>
+          <h1 className="text-lg font-semibold">Filters & Actions</h1>
           <Button 
             size="sm"
             onClick={() => {
@@ -143,7 +143,9 @@ export default function FiltersPage() {
                 fromPattern: '',
                 toPattern: '',
                 subjectPattern: '',
-                isEnabled: true,
+                bodyPattern: '',
+                enabled: true,
+                priority: 0,
                 actions: [],
               });
               setIsEditing(true);
@@ -158,24 +160,14 @@ export default function FiltersPage() {
               key={rule.id}
               data-testid="filter-item"
               className={`p-4 cursor-pointer hover:bg-gray-50 ${
-                selectedRule?.id === rule.id ? 'bg-gray-50' : ''
+                selectedRule?.id === rule.id ? 'bg-blue-50 border-l-4 border-l-gray-200' : ''
               }`}
               onClick={() => setSelectedRule(rule)}
             >
               <div className="flex items-center justify-between">
                 <span>{rule.name}</span>
                 <div className="flex items-center gap-2">
-                  <div className="text-sm text-gray-500">{rule?.actions?.length} actions</div>
-                  <button
-                    data-testid="toggle-status"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggle(rule.id);
-                    }}
-                    className={`w-3 h-3 rounded-full ${
-                      rule.isEnabled ? 'bg-green-500' : 'bg-red-500'
-                    }`}
-                  />
+                  <Switch checked={rule?.enabled ?? false} onCheckedChange={() => handleToggle(rule.id)} />
                 </div>
               </div>
             </div>
@@ -254,12 +246,12 @@ export default function FiltersPage() {
                   <Label>Name</Label>
                   <Input
                     name="name"
-                    value={selectedRule.name}
+                    value={selectedRule?.name ?? ''}
                     onChange={(e) =>
-                      setSelectedRule({
-                        ...selectedRule,
+                      setSelectedRule(rule => rule ? {
+                        ...rule,
                         name: e.target.value,
-                      })
+                      } : null)
                     }
                     disabled={!isEditing}
                   />
@@ -269,12 +261,12 @@ export default function FiltersPage() {
                   <Label>From Pattern</Label>
                   <Input
                     name="fromPattern"
-                    value={selectedRule.fromPattern}
+                    value={selectedRule?.fromPattern ?? ''}
                     onChange={(e) =>
-                      setSelectedRule({
-                        ...selectedRule,
+                      setSelectedRule(rule => rule ? {
+                        ...rule,
                         fromPattern: e.target.value,
-                      })
+                      } : null)
                     }
                     disabled={!isEditing}
                   />
@@ -284,12 +276,12 @@ export default function FiltersPage() {
                   <Label>To Pattern</Label>
                   <Input
                     name="toPattern"
-                    value={selectedRule.toPattern}
+                    value={selectedRule?.toPattern ?? ''}
                     onChange={(e) =>
-                      setSelectedRule({
-                        ...selectedRule,
+                      setSelectedRule(rule => rule ? {
+                        ...rule,
                         toPattern: e.target.value,
-                      })
+                      } : null)
                     }
                     disabled={!isEditing}
                   />
@@ -299,12 +291,12 @@ export default function FiltersPage() {
                   <Label>Subject Pattern</Label>
                   <Input
                     name="condition"
-                    value={selectedRule.subjectPattern}
+                    value={selectedRule?.subjectPattern ?? ''}
                     onChange={(e) =>
-                      setSelectedRule({
-                        ...selectedRule,
+                      setSelectedRule(rule => rule ? {
+                        ...rule,
                         subjectPattern: e.target.value,
-                      })
+                      } : null)
                     }
                     disabled={!isEditing}
                   />
@@ -327,7 +319,7 @@ export default function FiltersPage() {
                         setSelectedRule({
                           ...selectedRule,
                           actions: [
-                            ...selectedRule.actions,
+                            ...selectedRule?.actions || [],
                             {
                               id: 0,
                               ruleId: selectedRule.id,
@@ -343,6 +335,11 @@ export default function FiltersPage() {
                     </Button>
                   )}
                 </div>
+                {(!selectedRule?.actions || selectedRule?.actions?.length === 0) && (
+                  <div className="text-gray-500">
+                    No actions found
+                  </div>
+                )}
 
                 {selectedRule?.actions?.map((action, index) => (
                   <Card key={index}>
@@ -514,7 +511,8 @@ export default function FiltersPage() {
                                       ...action.config,
                                       brokers: e.target.value
                                         .split(',')
-                                        .map((s) => s.trim()),
+                                        .map((s) => s.trim())
+                                        .filter(Boolean),
                                     },
                                   };
                                   setSelectedRule({
