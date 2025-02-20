@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import nodemailer from 'nodemailer';
 import { Kafka } from 'kafkajs';
 import { VM } from 'vm2';
+import micromatch from 'micromatch';
 
 interface Email {
   id: number;
@@ -16,17 +17,19 @@ interface Email {
 }
 
 async function processEmailWithRules(email: Email) {
-  // Get all enabled rules ordered by priority
+  // Get all enabled rules
   const rules = await db
     .select()
     .from(filterRules)
-    .where(eq(filterRules.enabled, true))
-    .orderBy(filterRules.createdAt);
+    .where(eq(filterRules.enabled, true));
 
+  const matchedRules: typeof filterRules.$inferSelect[] = [];
+  
   for (const rule of rules) {
     // Check if email matches rule patterns
     if (await matchesRule(email, rule)) {
-      // Get actions for this rule
+      
+      // Get actions for this rulef
       const actions = await db
         .select()
         .from(filterActions)
@@ -59,21 +62,40 @@ async function processEmailWithRules(email: Email) {
       }
     }
   }
+  
+  return matchedRules;
 }
 
 async function matchesRule(email: Email, rule: typeof filterRules.$inferSelect) {
   const matchPatterns = {
     fromPattern: () => {
       if (!rule.fromPattern) return true;
-      return new RegExp(rule.fromPattern).test(email.fromEmail);
+      return micromatch.isMatch(email.fromEmail, rule.fromPattern, { 
+        nocase: true,
+        dot: true 
+      });
     },
     toPattern: () => {
       if (!rule.toPattern) return true;
-      return new RegExp(rule.toPattern).test(email.toEmail);
+      return micromatch.isMatch(email.toEmail, rule.toPattern, {
+        nocase: true,
+        dot: true
+      });
     },
     subjectPattern: () => {
       if (!rule.subjectPattern) return true;
-      return new RegExp(rule.subjectPattern).test(email.subject || '');
+      // Support both glob patterns and regex patterns
+      if (rule.subjectPattern.startsWith('/') && rule.subjectPattern.endsWith('/')) {
+        // Regex pattern
+        const pattern = rule.subjectPattern.slice(1, -1);
+        return new RegExp(pattern, 'i').test(email.subject || '');
+      } else {
+        // Glob pattern
+        return micromatch.isMatch(email.subject || '', rule.subjectPattern, {
+          nocase: true,
+          dot: true
+        });
+      }
     }
   };
 
@@ -88,22 +110,71 @@ async function matchesRule(email: Email, rule: typeof filterRules.$inferSelect) 
 
 async function processAction(email: Email, action: typeof filterActions.$inferSelect) {
   const config = action.config as Record<string, any>;
+  const maxRetries = 3;
+  let lastError: Error | null = null;
 
-  switch (action.type) {
+  // Validate action config
+  validateActionConfig(action.type, config);
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      switch (action.type) {
+        case 'forward':
+          await forwardEmail(email, config.forwardTo);
+          break;
+        case 'webhook':
+          await callWebhook(email, config.url, config.method || 'POST', attempt);
+          break;
+        case 'kafka':
+          await sendToKafka(email, config.topic, config.brokers);
+          break;
+        case 'javascript':
+          await runJavaScript(email, config.code);
+          break;
+        default:
+          throw new Error(`Unknown action type: ${action.type}`);
+      }
+      // If successful, break the retry loop
+      return;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (attempt === maxRetries) {
+        throw new Error(`Action failed after ${maxRetries} attempts: ${lastError.message}`);
+      }
+      // Wait before retrying (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+    }
+  }
+}
+
+function validateActionConfig(type: string, config: Record<string, any>) {
+  switch (type) {
     case 'forward':
-      await forwardEmail(email, config.forwardTo);
+      if (!config.forwardTo || typeof config.forwardTo !== 'string') {
+        throw new Error('Forward action requires valid forwardTo email address');
+      }
       break;
     case 'webhook':
-      await callWebhook(email, config.url, config.method || 'POST');
+      if (!config.url || typeof config.url !== 'string') {
+        throw new Error('Webhook action requires valid URL');
+      }
+      if (config.method && !['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(config.method)) {
+        throw new Error('Invalid webhook method');
+      }
       break;
     case 'kafka':
-      await sendToKafka(email, config.topic, config.brokers);
+      if (!config.topic || typeof config.topic !== 'string') {
+        throw new Error('Kafka action requires valid topic');
+      }
+      if (!Array.isArray(config.brokers) || !config.brokers.length) {
+        throw new Error('Kafka action requires valid brokers array');
+      }
       break;
     case 'javascript':
-      await runJavaScript(email, config.code);
+      if (!config.code || typeof config.code !== 'string') {
+        throw new Error('JavaScript action requires valid code');
+      }
       break;
-    default:
-      throw new Error(`Unknown action type: ${action.type}`);
   }
 }
 
@@ -137,66 +208,79 @@ async function forwardEmail(email: Email, forwardTo: string) {
   });
 }
 
-async function callWebhook(email: Email, url: string, method: string) {
+async function callWebhook(email: Email, url: string, method: string, attempt: number) {
   const emailAttachments = await db
     .select()
     .from(attachments)
     .where(eq(attachments.emailId, email.id));
 
-    //Replace the axios call with fetch
-    await fetch(url, {
-        method,
-        body: JSON.stringify({
-            id: email.id,
-            fromEmail: email.fromEmail,
-            toEmail: email.toEmail,
-            subject: email.subject,
-            body: email.body,
-            sentDate: email.sentDate,
-            attachments: emailAttachments.map(att => ({
-                filename: att.filename,
-                contentType: att.contentType,
-                size: att.size,
-            })),
-        }),
-    });
+  const response = await fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Retry-Attempt': attempt.toString(),
+    },
+    body: JSON.stringify({
+      id: email.id,
+      fromEmail: email.fromEmail,
+      toEmail: email.toEmail,
+      subject: email.subject,
+      body: email.body,
+      sentDate: email.sentDate,
+      attachments: emailAttachments.map(att => ({
+        filename: att.filename,
+        contentType: att.contentType,
+        size: att.size,
+      })),
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Webhook failed with status ${response.status}: ${await response.text()}`);
+  }
 }
 
 async function sendToKafka(email: Email, topic: string, brokers: string[]) {
   const kafka = new Kafka({
     clientId: process.env.KAFKA_CLIENT_ID || 'email-processor',
     brokers,
+    retry: {
+      initialRetryTime: 100,
+      retries: 3
+    }
   });
 
   const producer = kafka.producer();
   await producer.connect();
 
-  const emailAttachments = await db
-    .select()
-    .from(attachments)
-    .where(eq(attachments.emailId, email.id));
+  try {
+    const emailAttachments = await db
+      .select()
+      .from(attachments)
+      .where(eq(attachments.emailId, email.id));
 
-  await producer.send({
-    topic,
-    messages: [{
-      key: email.id.toString(),
-      value: JSON.stringify({
-        id: email.id,
-        fromEmail: email.fromEmail,
-        toEmail: email.toEmail,
-        subject: email.subject,
-        body: email.body,
-        sentDate: email.sentDate,
-        attachments: emailAttachments.map(att => ({
-          filename: att.filename,
-          contentType: att.contentType,
-          size: att.size,
-        })),
-      }),
-    }],
-  });
-
-  await producer.disconnect();
+    await producer.send({
+      topic,
+      messages: [{
+        key: email.id.toString(),
+        value: JSON.stringify({
+          id: email.id,
+          fromEmail: email.fromEmail,
+          toEmail: email.toEmail,
+          subject: email.subject,
+          body: email.body,
+          sentDate: email.sentDate,
+          attachments: emailAttachments.map(att => ({
+            filename: att.filename,
+            contentType: att.contentType,
+            size: att.size,
+          })),
+        }),
+      }],
+    });
+  } finally {
+    await producer.disconnect();
+  }
 }
 
 async function runJavaScript(email: Email, code: string) {
@@ -218,7 +302,11 @@ async function runJavaScript(email: Email, code: string) {
     },
   });
 
-  return vm.run(code);
+  const result = await vm.run(code);
+  if (result === false) {
+    throw new Error('JavaScript action returned false');
+  }
+  return result;
 }
 
 export { processEmailWithRules }; 

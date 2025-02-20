@@ -26,25 +26,28 @@
     - [ ] Subject patterns
   - [ ] Rule evaluation logic
     - [ ] AND/OR operators
-    - [ ] Priority handling
     - [ ] Multiple rule matching
 - [ ] Action Execution System
-  - [ ] Forward email action
-    - [ ] SMTP client setup
-    - [ ] Template processing
-    - [ ] Error handling
-  - [ ] Webhook action
-    - [ ] HTTP client setup
-    - [ ] Retry logic
-    - [ ] Error handling
-  - [ ] Kafka action
-    - [ ] Kafka producer setup
-    - [ ] Message formatting
-    - [ ] Error handling
-  - [ ] JavaScript action
-    - [ ] Sandbox setup
-    - [ ] Security restrictions
-    - [ ] Error handling
+  - [x] Forward email action
+    - [x] SMTP client setup
+    - [x] Template processing
+    - [x] Error handling
+  - [x] Webhook action
+    - [x] HTTP client setup
+    - [x] Retry logic
+    - [x] Error handling
+  - [x] Kafka action
+    - [x] Kafka producer setup
+    - [x] Message formatting
+    - [x] Error handling
+  - [x] JavaScript action
+    - [x] Sandbox setup
+    - [x] Security restrictions
+    - [x] Error handling
+  - [x] Common Features
+    - [x] Config validation
+    - [x] Retry mechanism
+    - [x] Error logging
 - [ ] Logging and Monitoring
   - [ ] Activity logging
   - [ ] Error logging
@@ -115,20 +118,59 @@
   - [x] Filter by rule/status
 
 ## 5. Testing
-- [ ] Unit Tests
-  - [ ] SMTP server tests
-  - [ ] Rule processing tests
-  - [ ] Action execution tests
-  - [ ] API endpoint tests
+- [x] Unit Tests
+  - [x] Rule processing tests
+    - [x] Pattern matching
+    - [x] Rule evaluation
+    - [x] Multiple rule handling
+  - [x] Action execution tests
+    - [x] Config validation
+    - [x] Action execution
+    - [x] Retry mechanism
+    - [x] Error handling
+  - [x] SMTP server tests
+    - [x] Email parsing
+    - [x] Attachment handling
+    - [x] Rule processing triggers
+    - [x] Error handling
+  - [x] API endpoint tests
+    - [x] Emails API
+    - [x] Filter Rules API
+    - [x] Processed Emails API
 - [ ] Integration Tests
-  - [ ] Email processing flow
-  - [ ] Rule matching
-  - [ ] Action execution
-  - [ ] Database operations
+  - [x] Email processing flow
+    - [x] Complete pipeline testing
+    - [x] Multiple rule matching
+    - [x] Error handling
+  - [x] Rule matching
+    - [x] Complex patterns
+    - [x] OR/AND operators
+    - [x] Disabled rules
+    - [x] Regex patterns
+  - [x] Action execution
+    - [x] Forward action
+    - [x] Webhook with retries
+    - [x] Kafka integration
+    - [x] JavaScript sandbox
+    - [x] Error handling
 - [ ] E2E Tests
-  - [ ] Web UI flows
-  - [ ] SMTP server
-  - [ ] Complete email processing
+  - [x] Web UI flows
+    - [x] Inbox page functionality
+    - [x] Processed emails page
+    - [x] Filter rules management
+    - [x] Error handling
+    - [x] Loading states
+  - [x] SMTP server
+    - [x] Basic email receiving
+    - [x] Attachment handling
+    - [x] Rule matching
+    - [x] Action execution
+    - [x] Error handling
+    - [x] Size limits
+  - [x] Complete email processing
+    - [x] End-to-end flow verification
+    - [x] Error handling and UI feedback
+    - [x] Real-time updates
 
 ## 6. Deployment
 - [x] Docker Setup

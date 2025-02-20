@@ -103,6 +103,9 @@ coverage.json
 coverage.xml
 *.lcov
 
+__tests__/
+.nyc_output/
+.swc/
 # Build output
 dist/
 build/

@@ -11,6 +11,7 @@
     "db:studio": "drizzle-kit studio",
     "db:update": "pnpm db:generate && pnpm db:migrate",
     "smtp": "tsx scripts/start-smtp.ts",
+    "send-test-emails": "tsx scripts/send-test-emails.ts",
     "test": "npx jest",
     "test:watch": "npx jest --watch",
     "test:coverage": "npx jest --coverage",
