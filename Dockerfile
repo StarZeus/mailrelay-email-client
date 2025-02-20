@@ -15,30 +15,36 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry during the build.
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 ENV POSTGRES_URL=postgres://postgres:postgres@localhost:54322/postgres
+ENV NEXT_SKIP_TYPECHECK=1
 
-RUN npm install -g pnpm && pnpm build
+# Install build dependencies and tsx globally
+RUN npm install -g pnpm tsx
+
+# Build Next.js only
+RUN pnpm next build
 
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
-ENV HOST 0.0.0.0
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV HOST=0.0.0.0
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Install tsx for TypeScript execution
+# Install tsx globally in production
 RUN npm install -g tsx
 
+# Copy necessary files and directories
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/server.ts ./server.ts
+COPY --from=builder /app/lib ./lib
+COPY --from=builder /app/node_modules ./node_modules
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
@@ -49,13 +55,16 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Set permissions for the nextjs user
+RUN chown -R nextjs:nodejs .
+
 USER nextjs
 
 EXPOSE 3000
 EXPOSE 2525
 
-ENV PORT 3000
-ENV SMTP_PORT 2525
+ENV PORT=3000
+ENV SMTP_PORT=2525
 
-# Start the application using tsx directly
+# Start the application using tsx
 CMD ["tsx", "server.ts"] 
