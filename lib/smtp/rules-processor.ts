@@ -3,7 +3,6 @@ import { filterRules, filterActions, processedEmails, emails, attachments } from
 import { eq } from 'drizzle-orm';
 import nodemailer from 'nodemailer';
 import { Kafka } from 'kafkajs';
-import { VM } from 'vm2';
 import micromatch from 'micromatch';
 
 interface Email {
@@ -16,20 +15,29 @@ interface Email {
   read: boolean;
 }
 
-async function processEmailWithRules(email: Email) {
-  // Get all enabled rules
+async function processEmailWithRules(email: Email, specificRuleId?: number) {
+  // Get rules - either all enabled rules or just the specific rule
   const rules = await db
     .select()
     .from(filterRules)
-    .where(eq(filterRules.enabled, true));
+    .where(
+      specificRuleId 
+        ? eq(filterRules.id, specificRuleId)
+        : eq(filterRules.enabled, true)
+    );
 
   const matchedRules: typeof filterRules.$inferSelect[] = [];
   
   for (const rule of rules) {
+    // Skip disabled rules unless specifically requested
+    if (!rule.enabled && !specificRuleId) continue;
+
     // Check if email matches rule patterns
     if (await matchesRule(email, rule)) {
+      // Add the matched rule to the array
+      matchedRules.push(rule);
       
-      // Get actions for this rulef
+      // Get actions for this rule
       const actions = await db
         .select()
         .from(filterActions)
@@ -67,43 +75,45 @@ async function processEmailWithRules(email: Email) {
 }
 
 async function matchesRule(email: Email, rule: typeof filterRules.$inferSelect) {
-  const matchPatterns = {
-    fromPattern: () => {
-      if (!rule.fromPattern) return true;
-      return micromatch.isMatch(email.fromEmail, rule.fromPattern, { 
-        nocase: true,
+  // Get only the patterns that are specified
+  const definedPatterns = {
+    ...(rule.fromPattern ? {
+      fromPattern: () => micromatch.isMatch(email.fromEmail, rule.fromPattern!, { 
+        nocase: true, 
         dot: true 
-      });
-    },
-    toPattern: () => {
-      if (!rule.toPattern) return true;
-      return micromatch.isMatch(email.toEmail, rule.toPattern, {
+      })
+    } : {}),
+    ...(rule.toPattern ? {
+      toPattern: () => micromatch.isMatch(email.toEmail, rule.toPattern!, {
         nocase: true,
         dot: true
-      });
-    },
-    subjectPattern: () => {
-      if (!rule.subjectPattern) return true;
-      // Support both glob patterns and regex patterns
-      if (rule.subjectPattern.startsWith('/') && rule.subjectPattern.endsWith('/')) {
-        // Regex pattern
-        const pattern = rule.subjectPattern.slice(1, -1);
-        return new RegExp(pattern, 'i').test(email.subject || '');
-      } else {
-        // Glob pattern
-        return micromatch.isMatch(email.subject || '', rule.subjectPattern, {
-          nocase: true,
-          dot: true
-        });
+      })
+    } : {}),
+    ...(rule.subjectPattern ? {
+      subjectPattern: () => {
+        if (rule.subjectPattern!.startsWith('/') && rule.subjectPattern!.endsWith('/')) {
+          const pattern = rule.subjectPattern!.slice(1, -1);
+          return new RegExp(pattern, 'i').test(email.subject || '');
+        } else {
+          return micromatch.isMatch(email.subject || '', rule.subjectPattern!, {
+            nocase: true,
+            dot: true
+          });
+        }
       }
-    }
+    } : {})
   };
 
+  // If no patterns defined, rule shouldn't match
+  if (Object.keys(definedPatterns).length === 0) {
+    return false;
+  }
+
   const results = await Promise.all(
-    Object.values(matchPatterns).map(pattern => pattern())
+    Object.values(definedPatterns).map(pattern => pattern())
   );
 
-  return rule.operator === 'OR' 
+  return rule.operator === 'OR'
     ? results.some(result => result)
     : results.every(result => result);
 }
@@ -284,9 +294,9 @@ async function sendToKafka(email: Email, topic: string, brokers: string[]) {
 }
 
 async function runJavaScript(email: Email, code: string) {
-  const vm = new VM({
-    timeout: 5000,
-    sandbox: {
+  try {
+    // Create a safe context with only the email data
+    const context = {
       email: {
         id: email.id,
         fromEmail: email.fromEmail,
@@ -299,14 +309,25 @@ async function runJavaScript(email: Email, code: string) {
         log: console.log,
         error: console.error,
       },
-    },
-  });
+    };
 
-  const result = await vm.run(code);
-  if (result === false) {
-    throw new Error('JavaScript action returned false');
+    // Use Function constructor instead of vm2
+    const fn = new Function('context', `
+      with (context) {
+        ${code}
+      }
+      return true;
+    `);
+
+    const result = fn(context);
+    if (result === false) {
+      throw new Error('JavaScript action returned false');
+    }
+    return result;
+  } catch (error) {
+    console.error('JavaScript execution error:', error);
+    throw error;
   }
-  return result;
 }
 
 export { processEmailWithRules }; 

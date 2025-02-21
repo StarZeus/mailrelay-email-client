@@ -2,6 +2,7 @@ import { SMTPServer } from 'smtp-server';
 import { simpleParser } from 'mailparser';
 import { db } from '../db';
 import { emails, attachments } from '../db/schema';
+import { processEmailWithRules } from './rules-processor';
 
 interface SMTPServerConfig {
   port: number;
@@ -35,7 +36,15 @@ export class EmailServer {
         .insert(emails)
         .values({
           fromEmail: email.from?.value?.[0]?.address || '',
-          toEmail: Array.isArray(email.to) ? email.to.map((to: any) => to.value).join(',') : email.to?.value || '',
+          toEmail: Array.isArray(email.to) 
+            ? email.to
+                .flatMap(to => to.value?.map(v => v.address) || [])
+                .filter(Boolean)
+                .join(',')
+            : email.to?.value
+                ?.map(v => v.address)
+                .filter(Boolean)
+                .join(',') || '',
           subject: email.subject || '',
           body: email.html || email.textAsHtml || email.text || '',
           sentDate: email.date || new Date(),
@@ -56,6 +65,17 @@ export class EmailServer {
         // Store attachments in database
         await db.insert(attachments).values(attachmentValues);
       }
+
+      // Process email with rules - ensure all required fields are non-null
+      await processEmailWithRules({
+        id: savedEmail.id,
+        fromEmail: savedEmail.fromEmail,
+        toEmail: savedEmail.toEmail,
+        subject: savedEmail.subject || '',
+        body: savedEmail.body || '',
+        sentDate: savedEmail.sentDate || new Date(),
+        read: savedEmail.read || false
+      });
 
       callback();
     } catch (error) {

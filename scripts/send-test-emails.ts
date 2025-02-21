@@ -18,9 +18,9 @@ const testEmails = [
     }]
   },
   {
-    from: 'orders@customer.com',
+    from: 'sender@gmail.com',
     to: 'orders@gmail.com',
-    subject: 'New Order #12345',
+    subject: 'New webhook #12345',
     text: 'A new order has been placed and needs processing.',
     attachments: [{
       filename: 'order.json',
@@ -29,7 +29,7 @@ const testEmails = [
   },
   {
     from: 'user@gmail.com',
-    to: 'support@company.com',
+    to: 'support@gmail.com',
     subject: 'URGENT: Account Access Issue',
     text: 'I cannot access my account. Please help!',
   },
@@ -44,7 +44,7 @@ const testEmails = [
     }]
   },
   {
-    from: 'marketing@newsletter.com',
+    from: 'sender@gmail.com',
     to: 'subscribers@company.com',
     subject: 'Weekly webhook',
     text: 'Here are this week\'s top stories and updates.',

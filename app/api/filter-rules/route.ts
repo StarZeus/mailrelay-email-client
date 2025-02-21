@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { filterRules, filterActions, processedEmails } from '@/lib/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { filterRules, filterActions, processedEmails, emails } from '@/lib/db/schema';
+import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
+import { processEmailWithRules } from '@/lib/smtp/rules-processor';
 
 const ruleSchema = z.object({
   name: z.string().min(1).optional(),
@@ -49,8 +50,69 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const validatedData = ruleSchema.parse(body);
+    const { action, ruleId, ...data } = await request.json();
+
+    if (action === 'run') {
+      // Get the rule
+      const [rule] = await db
+        .select()
+        .from(filterRules)
+        .where(eq(filterRules.id, ruleId));
+
+      if (!rule) {
+        return NextResponse.json({ error: 'Rule not found' }, { status: 404 });
+      }
+
+      if (!rule.enabled) {
+        return NextResponse.json({ error: 'Rule is disabled' }, { status: 400 });
+      }
+
+      // Get unprocessed emails
+      const unprocessedEmails = await db
+        .select({
+          id: emails.id,
+          fromEmail: emails.fromEmail,
+          toEmail: emails.toEmail,
+          subject: emails.subject,
+          body: emails.body,
+          sentDate: emails.sentDate,
+          read: emails.read,
+        })
+        .from(emails)
+        .leftJoin(
+          processedEmails,
+          and(
+            eq(emails.id, processedEmails.emailId),
+            eq(processedEmails.ruleId, ruleId)
+          )
+        )
+        .where(isNull(processedEmails.id));
+
+      // Process each email with the rule
+      let processedCount = 0;
+      for (const email of unprocessedEmails) {
+        try {
+          const matchedRules = await processEmailWithRules(email, ruleId);
+          // Only increment count if the rule actually matched and processed the email
+          if (matchedRules.length > 0) {
+            processedCount++;
+          }
+        } catch (error) {
+          console.error('Error processing email:', error);
+        }
+      }
+
+      return NextResponse.json({ 
+        success: true, 
+        processedCount,
+        message: processedCount > 0 
+          ? `Processed ${processedCount} emails with rule "${rule.name}"`
+          : `No emails matched the conditions for rule "${rule.name}"`
+      });
+    }
+
+    // Handle create rule action
+    const validatedData = ruleSchema.parse(data);
 
     const [rule] = await db
       .insert(filterRules)
@@ -60,6 +122,7 @@ export async function POST(request: Request) {
         toPattern: validatedData.toPattern,
         subjectPattern: validatedData.subjectPattern,
         operator: validatedData.operator,
+        enabled: validatedData.enabled ?? true,
       })
       .returning();
 
@@ -75,7 +138,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(rule);
   } catch (error) {
-    console.error('Error creating filter rule:', error);
+    console.error('Error:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Invalid request data', details: error.errors },
@@ -83,7 +146,7 @@ export async function POST(request: Request) {
       );
     }
     return NextResponse.json(
-      { error: 'Failed to create filter rule' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -179,7 +242,7 @@ export async function DELETE(request: Request) {
       { status: 500 }
     );
   }
-} 
+}
 
 export async function deleteActions(ruleId: number, actionId: number) {
   // Delete all actions for the rule and cascade delete processed emails

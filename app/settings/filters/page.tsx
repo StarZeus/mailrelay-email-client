@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,8 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { toast } from '@/components/ui/use-toast';
-import { TrashIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import { TrashIcon, Loader2 } from 'lucide-react';
+import { useFilters } from '@/hooks/useFilters';
 
 interface FilterRule {
   id: number;
@@ -32,31 +33,24 @@ interface FilterAction {
 }
 
 export default function FiltersPage() {
-  const [rules, setRules] = useState<FilterRule[]>([]);
+  const { filters, loading, error, toggleFilter, deleteFilter, runningRuleId, runRule, refresh } = useFilters();
   const [selectedRule, setSelectedRule] = useState<FilterRule | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  useEffect(() => {
-    fetchRules();
-  }, []);
+  if (loading) {
+    return (
+      <div className="container mx-auto py-6 flex justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
-  async function fetchRules() {
-    try {
-      const response = await fetch('/api/filter-rules');
-      if (!response.ok) {
-        throw new Error('Failed to fetch filter rules');
-      }
-      const data = await response.json();
-      setRules(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Error fetching rules:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch filter rules',
-        variant: 'destructive',
-      });
-      setRules([]);
-    }
+  if (error) {
+    return (
+      <div className="container mx-auto py-6 text-red-500">
+        Error: {error}
+      </div>
+    );
   }
 
   async function handleSave(rule: FilterRule) {
@@ -69,19 +63,11 @@ export default function FiltersPage() {
 
       if (!response.ok) throw new Error('Failed to save rule');
 
-      toast({
-        title: 'Success',
-        description: 'Filter rule saved successfully',
-      });
-
-      fetchRules();
+      toast.success('Filter rule saved successfully');
+      refresh();
       setIsEditing(false);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to save filter rule',
-        variant: 'destructive',
-      });
+      toast.error('Failed to save filter rule');
     }
   }
 
@@ -93,19 +79,11 @@ export default function FiltersPage() {
 
       if (!response.ok) throw new Error('Failed to delete rule');
 
-      toast({
-        title: 'Success',
-        description: 'Filter rule deleted successfully',
-      });
-
-      fetchRules();
+      toast.success('Filter rule deleted successfully');
+      refresh();
       setSelectedRule(null);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete filter rule',
-        variant: 'destructive',
-      });
+      toast.error('Failed to delete filter rule');
     }
   }
 
@@ -125,16 +103,9 @@ export default function FiltersPage() {
         };
       });
 
-      toast({
-        title: 'Success',
-        description: 'Action deleted successfully',
-      });
+      toast.success('Action deleted successfully');
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete action',
-        variant: 'destructive',
-      });
+      toast.error('Failed to delete action');
     }
   }
 
@@ -147,13 +118,9 @@ export default function FiltersPage() {
       });
       if (!response.ok) throw new Error('Failed to toggle rule');
 
-      fetchRules();
+      refresh();
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to toggle filter rule',
-        variant: 'destructive',
-      });
+      toast.error('Failed to toggle filter rule');
     }
   }
 
@@ -183,7 +150,7 @@ export default function FiltersPage() {
           </Button>
         </div>
         <div className="divide-y divide-gray-200" data-testid="filter-list">
-          {rules?.map((rule) => (
+          {filters?.map((rule) => (
             <div
               key={rule.id}
               data-testid="filter-item"
@@ -200,7 +167,7 @@ export default function FiltersPage() {
               </div>
             </div>
           ))}
-          {rules?.length === 0 && (
+          {filters?.length === 0 && (
             <div className="flex-1 flex items-center mt-10 justify-center text-gray-500">
               No filter rules found
             </div>
@@ -226,7 +193,7 @@ export default function FiltersPage() {
                       size="sm"
                       onClick={() => {
                         setIsEditing(false);
-                        fetchRules();
+                        refresh();
                       }}
                     >
                       Cancel
@@ -241,6 +208,21 @@ export default function FiltersPage() {
                   </>
                 ) : (
                   <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => runRule(selectedRule.id)}
+                      disabled={runningRuleId === selectedRule.id || !selectedRule.enabled}
+                    >
+                      {runningRuleId === selectedRule.id ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Running...
+                        </>
+                      ) : (
+                        'Run Rule'
+                      )}
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"

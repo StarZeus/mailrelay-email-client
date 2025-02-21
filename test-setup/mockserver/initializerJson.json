@@ -1,0 +1,15 @@
+[
+    {
+      "httpRequest": {
+        "method": "POST",
+        "path": "/webhook"
+      },
+      "httpResponse": {
+        "statusCode": 200,
+        "body": {
+          "status": "success",
+          "message": "Webhook received"
+        }
+      }
+    }
+  ]
