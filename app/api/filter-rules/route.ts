@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { processEmailWithRules } from '@/lib/smtp/rules-processor';
 
 const ruleSchema = z.object({
+  id: z.number().optional(),
   name: z.string().min(1).optional(),
   fromPattern: z.string().optional(),
   toPattern: z.string().optional(),
@@ -13,8 +14,12 @@ const ruleSchema = z.object({
   operator: z.enum(['AND', 'OR']).default('AND').optional(),
   enabled: z.boolean().optional(),
   actions: z.array(z.object({
+    id: z.number().optional(),
+    ruleId: z.number(),
     type: z.enum(['forward', 'webhook', 'kafka', 'javascript']),
     config: z.record(z.any()),
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional()
   })).optional(),
 });
 
@@ -192,14 +197,14 @@ async function insertOrUpdateActions(ruleId: number, actions: any[]) {
 
   // Use Promise.all to handle async operations properly
   await Promise.all(actions.map(async (action) => {
-    if (action.id) {
+    if (action.id > 0) {
       return db
         .update(filterActions)
         .set({
           type: action.type,
           config: action.config,
         })
-        .where(eq(filterActions.id, action.id));
+        .where(and(eq(filterActions.id, action.id), eq(filterActions.ruleId, ruleId)));
     } else {
       return db
         .insert(filterActions)
