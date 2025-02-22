@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import nodemailer from 'nodemailer';
 import { Kafka } from 'kafkajs';
 import micromatch from 'micromatch';
+import { logger, smtpLogger } from '../logger';
 
 interface Email {
   id: number;
@@ -16,6 +17,9 @@ interface Email {
 }
 
 async function processEmailWithRules(email: Email, specificRuleId?: number) {
+  const logger = smtpLogger.child({ emailId: email.id });
+  logger.info('Starting rule processing for email');
+
   // Get rules - either all enabled rules or just the specific rule
   const rules = await db
     .select()
@@ -32,8 +36,12 @@ async function processEmailWithRules(email: Email, specificRuleId?: number) {
     // Skip disabled rules unless specifically requested
     if (!rule.enabled && !specificRuleId) continue;
 
+    logger.debug({ msg: 'Checking rule', ruleId: rule.id });
+
     // Check if email matches rule patterns
     if (await matchesRule(email, rule)) {
+      logger.info({ msg: 'Email matched rule', ruleId: rule.id });
+
       // Add the matched rule to the array
       matchedRules.push(rule);
       
@@ -46,6 +54,7 @@ async function processEmailWithRules(email: Email, specificRuleId?: number) {
       // Process each action
       for (const action of actions) {
         try {
+          logger.debug({ msg: 'Processing action', actionId: action.id });
           await processAction(email, action);
           
           // Record successful processing
@@ -56,7 +65,13 @@ async function processEmailWithRules(email: Email, specificRuleId?: number) {
             status: 'success',
             processedAt: new Date(),
           });
+          logger.info({ msg: 'Action processed successfully', actionId: action.id });
         } catch (error) {
+          logger.error({
+            msg: 'Error processing action',
+            actionId: action.id,
+            error,
+          });
           // Record failed processing
           await db.insert(processedEmails).values({
             emailId: email.id,
@@ -71,6 +86,7 @@ async function processEmailWithRules(email: Email, specificRuleId?: number) {
     }
   }
   
+  logger.info('Rule processing completed for email');
   return matchedRules;
 }
 
@@ -251,12 +267,14 @@ async function callWebhook(email: Email, url: string, method: string, attempt: n
 }
 
 async function sendToKafka(email: Email, topic: string, brokers: string[]) {
+  logger.info({ msg: 'Sending email to Kafka YYYYY', topic, brokers });
+
   const kafka = new Kafka({
     clientId: process.env.KAFKA_CLIENT_ID || 'email-processor',
     brokers,
     retry: {
       initialRetryTime: 100,
-      retries: 3
+      retries: 1
     }
   });
 

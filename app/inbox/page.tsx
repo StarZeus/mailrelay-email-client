@@ -119,7 +119,7 @@ function EmailList() {
                   <Skeleton className="h-4 w-2/3" />
                 </div>
               ))}
-              {!loading && emails.length === 0 && (
+              {!loading && emails?.length === 0 && (
                 <div className="flex-1 flex items-center mt-10 justify-center text-gray-500">
                   No emails found
                 </div>

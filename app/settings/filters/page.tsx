@@ -351,7 +351,7 @@ export default function FiltersPage() {
                           actions: [
                             ...selectedRule?.actions || [],
                             {
-                              id: 0,
+                              id: -Date.now(),
                               ruleId: selectedRule.id,
                               type: 'forward',
                               config: {},

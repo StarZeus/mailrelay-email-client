@@ -3,6 +3,7 @@ import { simpleParser } from 'mailparser';
 import { db } from '../db';
 import { emails, attachments } from '../db/schema';
 import { processEmailWithRules } from './rules-processor';
+import { smtpLogger } from '../logger';
 
 interface SMTPServerConfig {
   port: number;
@@ -17,88 +18,82 @@ export class EmailServer {
 
   constructor(config: SMTPServerConfig) {
     this.config = config;
+    smtpLogger.info({ msg: 'Initializing SMTP server', config });
+    
     this.server = new SMTPServer({
       authOptional: config.authOptional ?? true,
       secure: config.secure ?? false,
       disabledCommands: ['STARTTLS'],
       onData: this.handleEmail.bind(this),
       onAuth: this.handleAuth.bind(this),
+      logger: true,
+    });
+
+    this.server.on('error', (err) => {
+      smtpLogger.error({ msg: 'SMTP server error', error: err });
     });
   }
 
   private async handleEmail(stream: any, session: any, callback: Function) {
+    const sessionLogger = smtpLogger.child({ sessionId: session.id });
     try {
-      // Parse email from stream
-      const email = await simpleParser(stream);
+      sessionLogger.debug({ msg: 'Processing incoming email', session });
       
-      // Store email in database and get the ID
-      const [savedEmail] = await db
-        .insert(emails)
-        .values({
-          fromEmail: email.from?.value?.[0]?.address || '',
-          toEmail: Array.isArray(email.to) 
-            ? email.to
-                .flatMap(to => to.value?.map(v => v.address) || [])
-                .filter(Boolean)
-                .join(',')
-            : email.to?.value
-                ?.map(v => v.address)
-                .filter(Boolean)
-                .join(',') || '',
-          subject: email.subject || '',
-          body: email.html || email.textAsHtml || email.text || '',
-          sentDate: email.date || new Date(),
-          read: false,
-        })
-        .returning();
+      const email = await simpleParser(stream);
+      sessionLogger.trace({ msg: 'Email parsed', emailId: email.messageId });
 
-      // Handle attachments if present
-      if (email.attachments && email.attachments.length > 0) {
-        const attachmentValues = email.attachments.map(attachment => ({
-          emailId: savedEmail.id,
-          filename: attachment.filename || 'unnamed',
-          contentType: attachment.contentType || 'application/octet-stream',
-          size: attachment.size || 0,
-          content: attachment.content.toString('hex'),
-        }));
-
-        // Store attachments in database
-        await db.insert(attachments).values(attachmentValues);
-      }
-
-      // Process email with rules - ensure all required fields are non-null
-      await processEmailWithRules({
-        id: savedEmail.id,
-        fromEmail: savedEmail.fromEmail,
-        toEmail: savedEmail.toEmail,
-        subject: savedEmail.subject || '',
-        body: savedEmail.body || '',
-        sentDate: savedEmail.sentDate || new Date(),
-        read: savedEmail.read || false
+      // Process email and store in database
+      const result = await processEmailWithRules(email);
+      
+      sessionLogger.info({
+        msg: 'Email processed successfully',
+        emailId: email.messageId,
+        result,
       });
 
       callback();
     } catch (error) {
-      console.error('Error processing email:', error);
-      callback(new Error('Error processing email'));
+      sessionLogger.error({
+        msg: 'Error processing email',
+        error,
+        session,
+      });
+      callback(error);
     }
   }
 
-  private async handleAuth(auth: any, session: any, callback: Function) {
-    // In this example, we're allowing all auth
-    // You can implement proper auth here
-    callback(null, { user: 123 });
+  private handleAuth(auth: any, session: any, callback: Function) {
+    const sessionLogger = smtpLogger.child({ sessionId: session.id });
+    sessionLogger.debug({
+      msg: 'Auth attempt',
+      username: auth.username,
+      session,
+    });
+    
+    // For now, accept all auth
+    callback(null, { user: auth.username });
   }
 
-  public start() {
-    return this.server.listen(this.config.port, this.config.host || '0.0.0.0', () => {
-      console.log(`> SMTP server URL: http://${this.config.host || 'localhost'}:${this.config.port}`);
-    });
+  public async start() {
+    try {
+      this.server.listen(this.config.port, this.config.host);
+      smtpLogger.info({
+        msg: 'SMTP server started',
+        port: this.config.port,
+        host: this.config.host,
+      });
+    } catch (error) {
+      smtpLogger.error({
+        msg: 'Failed to start SMTP server',
+        error,
+        config: this.config,
+      });
+      throw error;
+    }
   }
 
   public stop() {
-    this.server.close(() => {
-      console.log('SMTP server stopped');
-    });
+    smtpLogger.info({ msg: 'Stopping SMTP server' });
+    this.server.close();
   }
 } 
