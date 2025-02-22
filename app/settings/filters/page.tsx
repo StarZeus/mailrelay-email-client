@@ -553,6 +553,46 @@ export default function FiltersPage() {
                         {action.type === 'javascript' && (
                           <div>
                             <Label>JavaScript Code</Label>
+                            <div className="mb-4">
+                              <div className="flex items-center p-2 bg-gray-100 rounded-t-lg cursor-pointer hover:bg-gray-200 transition-colors" 
+                                   onClick={() => {
+                                     const helpPanel = document.getElementById(`help-panel-${index}`);
+                                     if (helpPanel) {
+                                       helpPanel.style.display = helpPanel.style.display === 'none' ? 'block' : 'none';
+                                     }
+                                   }}>
+                                <div className="font-semibold">📘 Script Help</div>
+                                <div className="ml-2 text-xs text-gray-500">(click to toggle)</div>
+                              </div>
+                              <div id={`help-panel-${index}`} className="p-4 bg-gray-50 rounded-b-lg border-t border-gray-200 text-sm font-mono">
+                                <div className="font-semibold mb-2">Available Variables:</div>
+                                <pre className="text-xs">
+{`email: {
+  id: number            // Unique ID of the email
+  fromEmail: string     // Sender's email address
+  toEmail: string       // Recipient's email address
+  subject: string|null  // Email subject line
+  body: string|null     // Email body content
+  sentDate: Date        // When email was sent
+}`}
+                                </pre>
+                                <div className="font-semibold mt-4 mb-2">Available Functions:</div>
+                                <pre className="text-xs">
+{`console.log()    // Log info messages
+console.error()  // Log error messages
+fetch()         // Make HTTP requests
+setTimeout()    // Delay execution
+clearTimeout()  // Clear a timeout
+Promise         // Work with promises
+
+Example:
+await fetch('https://api.example.com', {
+  method: 'POST',
+  body: JSON.stringify({ emailId: email.id })
+});`}
+                                </pre>              
+                              </div>
+                            </div>
                             <Textarea
                               value={action.config.code || ''}
                               onChange={(e) => {

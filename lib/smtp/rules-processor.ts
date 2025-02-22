@@ -316,7 +316,7 @@ async function sendToKafka(email: Email, topic: string, brokers: string[]) {
 
 async function runJavaScript(email: Email, code: string) {
   try {
-    // Create a safe context with only the email data
+    // Create a safe context with email data and allowed functions
     const context = {
       email: {
         id: email.id,
@@ -330,17 +330,42 @@ async function runJavaScript(email: Email, code: string) {
         log: console.log,
         error: console.error,
       },
+      fetch: fetch,
+      setTimeout: setTimeout,
+      clearTimeout: clearTimeout,
+      Promise: Promise
     };
 
-    // Use Function constructor instead of vm2
-    const fn = new Function('context', `
-      with (context) {
-        ${code}
-      }
-      return true;
-    `);
+    // Create async function using Function constructor
+    const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+    
+    // Wrap the code in an async IIFE
+    const wrappedCode = `
+      return (async () => {
+        try {
+          with (context) {
+            ${code}
+          }
+          return true;
+        } catch (error) {
+          console.error('Script error:', error);
+          throw error;
+        }
+      })();
+    `;
 
-    const result = fn(context);
+    const fn = new AsyncFunction('context', wrappedCode);
+
+    // Execute with timeout protection
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('JavaScript execution timed out')), 5000);
+    });
+
+    const result = await Promise.race([
+      fn(context),
+      timeoutPromise
+    ]);
+
     if (result === false) {
       throw new Error('JavaScript action returned false');
     }
