@@ -75,12 +75,38 @@ export const EmailList = () => {
       {emails.map(email => (
         <div 
           key={email.id}
-          className={`p-4 border rounded-lg ${email.read ? 'bg-gray-50' : 'bg-white'}`}
+          className={`p-4 border rounded-lg transition-all duration-200 hover:shadow-md cursor-pointer ${
+            email.read 
+              ? 'bg-gray-50 border-gray-200' 
+              : 'bg-white border-blue-200 shadow-sm'
+          }`}
           onClick={() => markAsRead(email.id)}
         >
-          <h3 className="font-semibold">{email.subject}</h3>
-          <p className="text-sm text-gray-600">{email.fromEmail}</p>
-          <p className="text-xs text-gray-400">{new Date(email.sentDate).toLocaleString()}</p>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h3 className={`font-semibold text-base mb-1 ${
+                email.read ? 'text-gray-700' : 'text-gray-900'
+              }`}>
+                {email.subject}
+                {!email.read && (
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                    New
+                  </span>
+                )}
+              </h3>
+              <p className={`text-sm ${
+                email.read ? 'text-gray-500' : 'text-gray-600'
+              }`}>
+                {email.fromEmail}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {new Date(email.sentDate).toLocaleString()}
+              </p>
+            </div>
+            {!email.read && (
+              <div className="w-2 h-2 rounded-full bg-blue-500 mt-2" />
+            )}
+          </div>
         </div>
       ))}
     </div>

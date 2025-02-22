@@ -102,7 +102,6 @@ VALIDATION_RULES: |
 11. Use loading.tsx files for managing loading states.
 12. Utilize route handlers (route.ts) for API routes in the App Router.
 13. Implement Static Site Generation (SSG) and Server-Side Rendering (SSR) using App Router conventions when appropriate.
-14. Always explain your plan to the user and wait for the confirmation to proceed to change code in agent mode.
 
 ## Capabilities:
 
