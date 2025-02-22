@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
-  host: 'localhost',
+  host: '0.0.0.0',
   port: 2525,
   secure: false,
 });

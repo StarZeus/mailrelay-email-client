@@ -206,19 +206,16 @@ function validateActionConfig(type: string, config: Record<string, any>) {
 
 async function forwardEmail(email: Email, forwardTo: string) {
   // Get attachments for this email
-  const emailAttachments = await db
-    .select()
-    .from(attachments)
+  try {
+    const emailAttachments = await db
+      .select()
+      .from(attachments)
     .where(eq(attachments.emailId, email.id));
 
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
+    secure: process.env.SMTP_SECURE === 'true'
   });
 
   await transporter.sendMail({
@@ -232,6 +229,12 @@ async function forwardEmail(email: Email, forwardTo: string) {
       contentType: att.contentType,
     })),
   });
+  } catch (error) {
+    logger.error({
+      msg: 'Error forwarding email',
+      error,
+    });
+  }
 }
 
 async function callWebhook(email: Email, url: string, method: string, attempt: number) {

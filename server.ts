@@ -11,7 +11,6 @@ const mode = process.env.APP_MODE || 'smtp';
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = parseInt(process.env.PORT || '3000', 10);
-const smtpPort = parseInt(process.env.SMTP_PORT || '2525', 10);
 
 // Initialize Next.js
 const app = next({ dev, hostname, port });
@@ -19,10 +18,10 @@ const handle = app.getRequestHandler();
 
 // Initialize SMTP Server
 const smtpServer = new EmailServer({
-  port: smtpPort,
-  host: process.env.SMTP_HOST,
-  secure: process.env.SMTP_SECURE === 'true',
-  authOptional: process.env.SMTP_AUTH_OPTIONAL !== 'false',
+  port: parseInt(process.env.SMTP_SERVER_PORT || '2525', 10),
+  host: process.env.SMTP_SERVER_HOST,
+  secure: process.env.SMTP_SERVER_SECURE === 'true',
+  authOptional: process.env.SMTP_SERVER_AUTH_OPTIONAL !== 'false',
 });
 
 async function start() {

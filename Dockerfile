@@ -64,7 +64,7 @@ EXPOSE 3000
 EXPOSE 2525
 
 ENV PORT=3000
-ENV SMTP_PORT=2525
+ENV SMTP_SERVER_PORT=2525
 
 # Start the application using tsx
 CMD ["tsx", "server.ts"] 
