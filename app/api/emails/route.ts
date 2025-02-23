@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
-import { emails } from '@/lib/db/schema';
-import { desc, eq, like, sql } from 'drizzle-orm';
+import { emails, processedEmails } from '@/lib/db/schema';
+import { desc, eq, like, sql, inArray, isNull } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { webLogger } from '@/lib/logger';
 
@@ -15,6 +15,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const cursor = searchParams.get('cursor');
     const q = searchParams.get('q');
+    const unprocessed = searchParams.get('unprocessed') === 'true';
 
     let baseQuery = db
       .select({
@@ -26,7 +27,20 @@ export async function GET(request: Request) {
         receivedAt: emails.sentDate,
         read: emails.read,
       })
-      .from(emails)
+      .from(emails);
+
+    if (unprocessed) {
+      // Left join with processedEmails to find emails that haven't been processed
+      baseQuery = baseQuery
+        .leftJoin(
+          processedEmails,
+          eq(emails.id, processedEmails.emailId)
+        )
+        .where(isNull(processedEmails.id));
+    }
+
+    // Add ordering and limit after the join
+    baseQuery = baseQuery
       .orderBy(desc(emails.sentDate))
       .limit(PAGE_SIZE + 1);
 
@@ -47,6 +61,7 @@ export async function GET(request: Request) {
     logger.info({
       msg: 'Emails fetched successfully',
       count: results.length,
+      unprocessed,
     });
 
     return NextResponse.json({
@@ -112,6 +127,39 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       { error: 'Failed to create email' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  const logger = webLogger.child({ route: '/api/emails', method: 'DELETE' });
+  
+  try {
+    const { ids } = await request.json();
+    
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json(
+        { error: 'Invalid request: ids must be a non-empty array' },
+        { status: 400 }
+      );
+    }
+
+    logger.debug({ msg: 'Deleting emails', ids });
+
+    // delete emails from processed emails table
+    await db.delete(processedEmails).where(inArray(processedEmails.emailId, ids));
+
+    await db.delete(emails).where(inArray(emails.id, ids));
+
+    logger.info({ msg: 'Emails deleted successfully', count: ids.length });
+
+    return NextResponse.json({ message: 'Emails deleted successfully' });
+  } catch (error) {
+    logger.error({ msg: 'Error deleting emails', error });
+
+    return NextResponse.json(
+      { error: 'Failed to delete emails' },
       { status: 500 }
     );
   }

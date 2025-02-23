@@ -75,7 +75,20 @@
   - [x] Email detail panel
   - [x] Loading states
   - [x] Error states
-
+  - [x] Icon Button to refresh email list
+  - [x] Icon Button to delete one or multiple emails
+  - [x] Icon Button add filter and action based on selected emails 
+  - [x] Toggle icon button to show all emails or only un processed emails
+  - [x] Ability to show all emails or only un processed emails
+  - [x] Ability to refresh email list
+  - [x] Ability to delete one or multiple emails
+  - [x] Ability to select one or multiple emails
+  - [ ] Ability to add filter and action based on selected emails 
+    - [ ] Ability to add filter and action based on email subject
+    - [ ] Ability to add filter and action based on email body
+    - [ ] Ability to add filter and action based on email from email address
+    - [ ] Ability to add filter and action based on email to email address
+  
 ### 3.2 Processed Emails Page
 - [x] Processed email list
   - [x] Group by rules
@@ -88,7 +101,14 @@
 - [x] UI Components
   - [x] Status indicators
   - [x] Rule grouping
+    - [x] Group by rule name
+    - [x] Collapse/expand rule groups with chevron icon
   - [x] Timeline view
+  - [x] Icon Button to refresh email list
+  - [x] Icon Button to delete one or multiple emails
+  - [x] Ability to delete all processed emails
+  - [x] Ability to refresh processed emails
+  - [x] Confirmation dialog to delete processed emails
 
 ### 3.3 Filter Rules Page
 - [x] Rule Management

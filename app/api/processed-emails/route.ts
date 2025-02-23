@@ -4,7 +4,7 @@ import { desc, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { webLogger } from '@/lib/logger';
 
-export async function GET(request: Request) {
+export async function GET() {
   const logger = webLogger.child({ route: '/api/processed-emails' });
   
   try {
@@ -26,9 +26,10 @@ export async function GET(request: Request) {
         },
       })
       .from(processedEmails)
-      .innerJoin(filterRules, eq(processedEmails.ruleId, filterRules.id))
-      .innerJoin(emails, eq(processedEmails.emailId, emails.id))
-      .orderBy(desc(processedEmails.processedAt));
+      .leftJoin(filterRules, eq(processedEmails.ruleId, filterRules.id))
+      .leftJoin(emails, eq(processedEmails.emailId, emails.id))
+      .orderBy(desc(processedEmails.processedAt))
+      .limit(100);
 
     logger.info({
       msg: 'Processed emails fetched successfully',
@@ -77,6 +78,30 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       { error: 'Failed to process email' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE() {
+  const logger = webLogger.child({ route: '/api/processed-emails', method: 'DELETE' });
+  
+  try {
+    logger.info('Deleting all processed emails');
+    
+    await db.delete(processedEmails);
+
+    logger.info('All processed emails deleted successfully');
+
+    return NextResponse.json({ message: 'All processed emails deleted successfully' });
+  } catch (error) {
+    logger.error({
+      msg: 'Error deleting processed emails',
+      error,
+    });
+
+    return NextResponse.json(
+      { error: 'Failed to delete processed emails' },
       { status: 500 }
     );
   }

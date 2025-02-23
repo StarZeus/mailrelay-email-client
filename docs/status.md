@@ -12,6 +12,12 @@
 ### Web UI
 - Complete inbox page with email viewing
 - Processed emails page with rule grouping
+  - Rule-based email organization
+  - Collapsible rule groups with chevron indicators
+  - Email status tracking
+  - Processing timeline view
+  - Refresh and delete functionality
+  - Confirmation dialogs for destructive actions
 - Filter rules management interface
 - Real-time search functionality
 - Infinite scroll implementation
