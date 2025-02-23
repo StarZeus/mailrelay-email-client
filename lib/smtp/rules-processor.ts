@@ -22,74 +22,163 @@ async function processEmailWithRules(email: Email, specificRuleId?: number) {
   const logger = smtpLogger.child({ emailId: email.id });
   logger.info('Starting rule processing for email');
 
-  // Get rules - either all enabled rules or just the specific rule
-  const rules = await db
-    .select()
-    .from(filterRules)
-    .where(
-      specificRuleId 
-        ? eq(filterRules.id, specificRuleId)
-        : eq(filterRules.enabled, true)
-    );
+  try {
+    // Get rules - either all enabled rules or just the specific rule
+    const rules = await db
+      .select()
+      .from(filterRules)
+      .where(
+        specificRuleId 
+          ? eq(filterRules.id, specificRuleId)
+          : eq(filterRules.enabled, true)
+      );
 
-  const matchedRules: typeof filterRules.$inferSelect[] = [];
-  
-  for (const rule of rules) {
-    // Skip disabled rules unless specifically requested
-    if (!rule.enabled && !specificRuleId) continue;
+    if (rules.length === 0) {
+      logger.info('No matching rules found for email');
+      return [];
+    }
 
-    logger.debug({ msg: 'Checking rule', ruleId: rule.id });
+    const matchedRules: typeof filterRules.$inferSelect[] = [];
+    
+    for (const rule of rules) {
+      // Skip disabled rules unless specifically requested
+      if (!rule.enabled && !specificRuleId) continue;
 
-    // Check if email matches rule patterns
-    if (await matchesRule(email, rule)) {
-      logger.info({ msg: 'Email matched rule', ruleId: rule.id });
+      logger.debug({ msg: 'Checking rule', ruleId: rule.id, ruleName: rule.name });
 
-      // Add the matched rule to the array
-      matchedRules.push(rule);
-      
-      // Get actions for this rule
-      const actions = await db
-        .select()
-        .from(filterActions)
-        .where(eq(filterActions.ruleId, rule.id));
+      try {
+        // Check if email matches rule patterns
+        if (await matchesRule(email, rule)) {
+          logger.info({ msg: 'Email matched rule', ruleId: rule.id, ruleName: rule.name });
 
-      // Process each action
-      for (const action of actions) {
-        try {
-          logger.debug({ msg: 'Processing action', actionId: action.id });
-          await processAction(email, action);
+          // Add the matched rule to the array
+          matchedRules.push(rule);
           
-          // Record successful processing
-          await db.insert(processedEmails).values({
-            emailId: email.id,
-            ruleId: rule.id,
-            actionId: action.id,
-            status: 'success',
-            processedAt: new Date(),
-          });
-          logger.info({ msg: 'Action processed successfully', actionId: action.id });
-        } catch (error) {
-          logger.error({
-            msg: 'Error processing action',
-            actionId: action.id,
-            error,
-          });
-          // Record failed processing
-          await db.insert(processedEmails).values({
-            emailId: email.id,
-            ruleId: rule.id,
-            actionId: action.id,
-            status: 'failed',
-            error: error instanceof Error ? error.message : String(error),
-            processedAt: new Date(),
+          // Get actions for this rule
+          const actions = await db
+            .select()
+            .from(filterActions)
+            .where(eq(filterActions.ruleId, rule.id));
+
+          if (actions.length === 0) {
+            logger.warn({ msg: 'No actions found for matched rule', ruleId: rule.id, ruleName: rule.name });
+            continue;
+          }
+
+          // Process each action
+          for (const action of actions) {
+            try {
+              logger.debug({ 
+                msg: 'Processing action', 
+                actionId: action.id, 
+                actionType: action.type,
+                ruleId: rule.id,
+                ruleName: rule.name 
+              });
+
+              await processAction(email, action);
+              
+              // Record successful processing
+              await db.insert(processedEmails).values({
+                emailId: email.id,
+                ruleId: rule.id,
+                actionId: action.id,
+                status: 'success',
+                processedAt: new Date(),
+              });
+
+              logger.info({ 
+                msg: 'Action processed successfully', 
+                actionId: action.id,
+                actionType: action.type,
+                ruleId: rule.id,
+                ruleName: rule.name 
+              });
+            } catch (error) {
+              const errorMessage = error instanceof Error 
+                ? error.message 
+                : String(error);
+
+              const detailedError = `Failed to process action ${action.type} for rule "${rule.name}": ${errorMessage}`;
+              
+              logger.error({
+                msg: 'Error processing action',
+                actionId: action.id,
+                actionType: action.type,
+                ruleId: rule.id,
+                ruleName: rule.name,
+                error: detailedError,
+                stack: error instanceof Error ? error.stack : undefined
+              });
+
+              // Record failed processing with detailed error
+              await db.insert(processedEmails).values({
+                emailId: email.id,
+                ruleId: rule.id,
+                actionId: action.id,
+                status: 'failed',
+                error: detailedError,
+                processedAt: new Date(),
+              });
+            }
+          }
+        } else {
+          logger.debug({ 
+            msg: 'Email did not match rule patterns', 
+            ruleId: rule.id, 
+            ruleName: rule.name,
+            patterns: {
+              fromPattern: rule.fromPattern,
+              toPattern: rule.toPattern,
+              subjectPattern: rule.subjectPattern
+            }
           });
         }
+      } catch (error) {
+        const errorMessage = error instanceof Error 
+          ? error.message 
+          : String(error);
+
+        logger.error({
+          msg: 'Error processing rule',
+          ruleId: rule.id,
+          ruleName: rule.name,
+          error: errorMessage,
+          stack: error instanceof Error ? error.stack : undefined
+        });
+
+        // Record rule processing failure
+        await db.insert(processedEmails).values({
+          emailId: email.id,
+          ruleId: rule.id,
+          status: 'failed',
+          error: `Rule processing failed: ${errorMessage}`,
+          processedAt: new Date(),
+        });
       }
     }
+    
+    logger.info({ 
+      msg: 'Rule processing completed for email',
+      matchedRulesCount: matchedRules.length,
+      matchedRules: matchedRules.map(r => ({ id: r.id, name: r.name }))
+    });
+
+    return matchedRules;
+  } catch (error) {
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : String(error);
+
+    logger.error({
+      msg: 'Fatal error during rule processing',
+      error: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined,
+      emailId: email.id
+    });
+
+    throw new Error(`Failed to process email rules: ${errorMessage}`);
   }
-  
-  logger.info('Rule processing completed for email');
-  return matchedRules;
 }
 
 async function matchesRule(email: Email, rule: typeof filterRules.$inferSelect) {
@@ -138,7 +227,7 @@ async function matchesRule(email: Email, rule: typeof filterRules.$inferSelect) 
 
 async function processAction(email: Email, action: typeof filterActions.$inferSelect) {
   const config = action.config as Record<string, any>;
-  const maxRetries = 3;
+  const maxRetries = 1;
   let lastError: Error | null = null;
 
   // Validate action config
@@ -395,14 +484,48 @@ async function runJavaScript(email: Email, code: string) {
   }
 }
 
+function emailAndName(inputEmail: string): { name: string | null; email: string } {
+  // Handle formats like:
+  // "Name" <email@domain.com>
+  // Name <email@domain.com>
+  // <email@domain.com>
+  // email@domain.com
+  
+  // First try to match the format with angle brackets
+  const angleMatch = inputEmail.match(/^(?:"([^"]+)"|([^<]+?))?(?:\s*<([^>]+)>)$/);
+  if (angleMatch) {
+    const [, quotedName, unquotedName, email] = angleMatch;
+    const name = quotedName || (unquotedName ? unquotedName.trim() : null);
+    return {
+      name: name,
+      email: email.trim()
+    };
+  }
+  
+  // If no angle brackets, check if it's a valid email address
+  const emailMatch = inputEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+  if (emailMatch) {
+    return {
+      name: null,
+      email: inputEmail.trim()
+    };
+  }
+  
+  // If nothing matches, return the input as email
+  return {
+    name: null,
+    email: inputEmail
+  };
+}
+
 async function processEmailRelay(email: Email, config: Record<string, any>) {
   try {
     // Prepare email data for template
     const emailData = {
       email: {
         id: email.id,
-        fromEmail: email.fromEmail,
-        toEmail: email.toEmail,
+        fromEmail: emailAndName(email.fromEmail).email,
+        toEmail: emailAndName(email.toEmail).email,
         subject: email.subject,
         body: email.body,
         sentDate: email.sentDate
@@ -464,7 +587,9 @@ async function processEmailRelay(email: Email, config: Record<string, any>) {
         const result = template(emailData); // Use the same emailData we use for templates
         
         // Handle result based on type
-        if (typeof result === 'string') {
+        if(result && result.includes(',')) {
+          recipients = result.split(',').map(email => email.trim());
+        } else if (typeof result === 'string') {
           // If it's a single email address
           recipients = [result];
         } else if (Array.isArray(result)) {
