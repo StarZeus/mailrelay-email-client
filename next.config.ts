@@ -10,7 +10,8 @@ const config: NextConfig = {
   experimental: {
     ppr: true,
     dynamicIO: true,
-    serverSourceMaps: true
+    serverSourceMaps: true,
+    swcMinify: true,
   },
   serverExternalPackages: ['mjml', 'uglify-js', 'html-minifier', 'mjml-core', 'mjml-parser-xml', 'mjml-validator'],
   output: 'standalone',

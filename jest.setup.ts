@@ -1,26 +1,26 @@
 import '@testing-library/jest-dom';
 
 // Mock Next.js router
-const useRouter = jest.fn(() => ({
-  push: jest.fn(),
-  pathname: '/',
-}));
-
-const useSearchParams = jest.fn(() => ({
-  get: jest.fn(),
-  toString: jest.fn(),
-}));
-
-const usePathname = jest.fn(() => '/');
-
 jest.mock('next/navigation', () => ({
-  useRouter,
-  useSearchParams,
-  usePathname,
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    back: jest.fn(),
+  }),
+  useSearchParams: () => ({
+    get: jest.fn(),
+  }),
+  usePathname: () => '/',
 }));
 
-// Export mocks for use in tests
-export { useRouter, useSearchParams, usePathname };
+// Mock clientLogger
+jest.mock('@/lib/logger', () => ({
+  clientLogger: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    error: jest.fn(),
+  },
+}));
 
 // Mock intersection observer
 const mockIntersectionObserver = jest.fn();

@@ -8,8 +8,8 @@ const transporter = nodemailer.createTransport({
 
 const testEmails = [
   {
-    from: 'sender@important.com',
-    to: 'recipient@test.com',
+    from: 'Sender <sender@important.com>',
+    to: 'Recipient <recipient@test.com>',
     subject: '[IMPORTANT] kafka System Alert',
     text: 'This is a high priority system alert that requires immediate attention.',
     attachments: [{
@@ -18,8 +18,8 @@ const testEmails = [
     }]
   },
   {
-    from: 'sender@gmail.com',
-    to: 'orders@gmail.com',
+    from: 'Sender <sender@gmail.com>',
+    to: 'Orders <orders@gmail.com>',
     subject: 'New webhook #12345',
     text: 'A new order has been placed and needs processing.',
     attachments: [{
