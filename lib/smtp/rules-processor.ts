@@ -5,6 +5,8 @@ import nodemailer from 'nodemailer';
 import { Kafka } from 'kafkajs';
 import micromatch from 'micromatch';
 import { logger, smtpLogger } from '../logger';
+import Handlebars from 'handlebars';
+import mjml2html from 'mjml';
 
 interface Email {
   id: number;
@@ -130,8 +132,8 @@ async function matchesRule(email: Email, rule: typeof filterRules.$inferSelect) 
   );
 
   return rule.operator === 'OR'
-    ? results.some(result => result)
-    : results.every(result => result);
+    ? results.some((result: boolean) => result)
+    : results.every((result: boolean) => result);
 }
 
 async function processAction(email: Email, action: typeof filterActions.$inferSelect) {
@@ -156,6 +158,9 @@ async function processAction(email: Email, action: typeof filterActions.$inferSe
           break;
         case 'javascript':
           await runJavaScript(email, config.code);
+          break;
+        case 'email-relay':
+          await processEmailRelay(email, config);
           break;
         default:
           throw new Error(`Unknown action type: ${action.type}`);
@@ -199,6 +204,20 @@ function validateActionConfig(type: string, config: Record<string, any>) {
     case 'javascript':
       if (!config.code || typeof config.code !== 'string') {
         throw new Error('JavaScript action requires valid code');
+      }
+      break;
+    case 'email-relay':
+      if (config.templateType === 'mjml') {
+        if (!config.mjmlTemplate || typeof config.mjmlTemplate !== 'string') {
+          throw new Error('Email relay action requires valid MJML template');
+        }
+      } else {
+        if (!config.htmlTemplate || typeof config.htmlTemplate !== 'string') {
+          throw new Error('Email relay action requires valid HTML template');
+        }
+      }
+      if (!config.recipientExpression || typeof config.recipientExpression !== 'string') {
+        throw new Error('Email relay action requires valid recipient expression');
       }
       break;
   }
@@ -372,6 +391,145 @@ async function runJavaScript(email: Email, code: string) {
     return result;
   } catch (error) {
     console.error('JavaScript execution error:', error);
+    throw error;
+  }
+}
+
+async function processEmailRelay(email: Email, config: Record<string, any>) {
+  try {
+    // Prepare email data for template
+    const emailData = {
+      email: {
+        id: email.id,
+        fromEmail: email.fromEmail,
+        toEmail: email.toEmail,
+        subject: email.subject,
+        body: email.body,
+        sentDate: email.sentDate
+      }
+    };
+
+    // Render template based on type
+    let html: string;
+    if (config.templateType === 'mjml') {
+      // First convert MJML to HTML
+      const mjmlResult = mjml2html(config.mjmlTemplate || `
+        <mjml>
+          <mj-body>
+            <mj-section>
+              <mj-column>
+                <mj-text>
+                  {{email.subject}}
+                </mj-text>
+                <mj-divider />
+                <mj-text>
+                  {{{email.body}}}
+                </mj-text>
+              </mj-column>
+            </mj-section>
+          </mj-body>
+        </mjml>
+      `);
+      
+      // Then compile the resulting HTML with Handlebars
+      const template = Handlebars.compile(mjmlResult.html);
+      html = template(emailData);
+    } else {
+      // HTML template
+      const template = Handlebars.compile(config.htmlTemplate || `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>{{email.subject}}</title>
+          </head>
+          <body>
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+              {{{email.body}}}
+            </div>
+          </body>
+        </html>
+      `);
+      html = template(emailData);
+    }
+
+    // Extract recipients using the expression
+    let recipients: string[];
+    if (config.recipientExpression === 'email.toEmail') {
+      recipients = [email.toEmail];
+    } else {
+      try {
+        // Handle Handlebars-style expressions
+        const template = Handlebars.compile(config.recipientExpression);
+        const result = template(emailData); // Use the same emailData we use for templates
+        
+        // Handle result based on type
+        if (typeof result === 'string') {
+          // If it's a single email address
+          recipients = [result];
+        } else if (Array.isArray(result)) {
+          // If it's an array of email addresses
+          recipients = result.filter(r => typeof r === 'string');
+        } else {
+          throw new Error('Recipient expression must evaluate to string or array of strings');
+        }
+
+        // Validate we got at least one recipient
+        if (recipients.length === 0) {
+          throw new Error('No valid recipients found from expression');
+        }
+
+        // Basic email validation
+        recipients = recipients.filter(email => 
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+        );
+
+        if (recipients.length === 0) {
+          throw new Error('No valid email addresses found');
+        }
+      } catch (error) {
+        logger.error({
+          msg: 'Error evaluating recipient expression',
+          error,
+          expression: config.recipientExpression
+        });
+        throw new Error(`Invalid recipient expression: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
+    // Get attachments
+    const emailAttachments = await db
+      .select()
+      .from(attachments)
+      .where(eq(attachments.emailId, email.id));
+
+    // Create transporter
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true'
+    });
+
+    // Send to each recipient
+    for (const recipient of recipients) {
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM,
+        to: recipient,
+        subject: email.subject || '',
+        html: html,
+        attachments: emailAttachments.map(att => ({
+          filename: att.filename,
+          content: Buffer.from(att.content, 'base64'),
+          contentType: att.contentType,
+        })),
+      });
+    }
+  } catch (error) {
+    logger.error({
+      msg: 'Error in email relay action',
+      error,
+      emailId: email.id,
+    });
     throw error;
   }
 }

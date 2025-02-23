@@ -16,7 +16,7 @@ const ruleSchema = z.object({
   actions: z.array(z.object({
     id: z.number().optional(),
     ruleId: z.number(),
-    type: z.enum(['forward', 'webhook', 'kafka', 'javascript']),
+    type: z.enum(['forward', 'webhook', 'kafka', 'javascript', 'email-relay']),
     config: z.record(z.any()),
     createdAt: z.string().optional(),
     updatedAt: z.string().optional()

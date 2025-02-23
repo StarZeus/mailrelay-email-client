@@ -21,13 +21,13 @@
   - [x] Store in database
   - [ ] Trigger rule processing
 - [ ] Rule Processing Engine
-  - [ ] Pattern matching implementation
-    - [ ] Email address patterns
-    - [ ] Subject patterns
-  - [ ] Rule evaluation logic
-    - [ ] AND/OR operators
-    - [ ] Multiple rule matching
-- [ ] Action Execution System
+  - [X] Pattern matching implementation
+    - [X] Email address patterns
+    - [X] Subject patterns
+  - [X] Rule evaluation logic
+    - [X] AND/OR operators
+    - [X] Multiple rule matching
+- [X] Action Execution System
   - [x] Forward email action
     - [x] SMTP client setup
     - [x] Template processing
@@ -44,15 +44,20 @@
     - [x] Sandbox setup
     - [x] Security restrictions
     - [x] Error handling
+  - [ ] Email Relay action
+    - [ ] Accept MJML emails template
+    - [ ] Parse incoming email and extract data as JSON
+    - [ ] Make all values in JSON data available as drag and drop data
+    - [ ] Render MJML template in split screen
+    - [ ] Pass data to MJML template
+    - [ ] Return composed email as string
+    - [ ] Send composed email to recipient
+    - [ ] Implment ability to extract email recipient from email body
+    - [ ] Use data from email body to send email to multiple recipients
   - [x] Common Features
     - [x] Config validation
     - [x] Retry mechanism
     - [x] Error logging
-- [ ] Logging and Monitoring
-  - [ ] Activity logging
-  - [ ] Error logging
-  - [ ] Performance metrics
-  - [ ] Health checks
 
 ## 3. Web UI Implementation
 ### 3.1 Inbox Page
@@ -181,11 +186,6 @@
   - [x] GitHub Actions
   - [ ] Automated testing
   - [ ] Deployment automation
-- [ ] Production Setup
-  - [ ] SSL/TLS configuration
-  - [ ] Load balancing
-  - [ ] Monitoring
-  - [ ] Backup strategy
 
 ## 7. Documentation
 - [x] API Documentation
