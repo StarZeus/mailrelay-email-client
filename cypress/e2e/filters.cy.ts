@@ -66,6 +66,41 @@ describe('Filters & Actions Page', () => {
     });
   });
 
+  it('allows drag and drop of template files', () => {
+    cy.get('button').contains('New Rule').click();
+    cy.get('[data-testid="filter-form"]').within(() => {
+      cy.get('input').first().type('Test Template Drop');
+      cy.get('button').contains('Add Action').click();
+      cy.get('button[role="combobox"]').last().click();
+    });
+    cy.get('[role="option"]').contains('Email Relay').click();
+
+    // Test HTML template drop
+    const htmlContent = '<!DOCTYPE html><html><body>Test HTML</body></html>';
+    const htmlFile = new File([htmlContent], 'template.html', { type: 'text/html' });
+    cy.get('textarea').first().parent().trigger('dragover')
+      .trigger('drop', { 
+        dataTransfer: { 
+          files: [htmlFile],
+          types: ['Files']
+        }
+      });
+
+    // Switch to MJML and test MJML template drop
+    cy.get('button[role="combobox"]').first().click();
+    cy.get('[role="option"]').contains('MJML Template').click();
+    
+    const mjmlContent = '<mjml><mj-body><mj-text>Test MJML</mj-text></mj-body></mjml>';
+    const mjmlFile = new File([mjmlContent], 'template.mjml', { type: 'text/plain' });
+    cy.get('textarea').first().parent().trigger('dragover')
+      .trigger('drop', { 
+        dataTransfer: { 
+          files: [mjmlFile],
+          types: ['Files']
+        }
+      });
+  });
+
   it('shows available email variables for templates', () => {
     cy.get('button').contains('New Rule').click();
     cy.get('[data-testid="filter-form"]').within(() => {

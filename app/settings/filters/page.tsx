@@ -664,7 +664,68 @@ await fetch('https://api.example.com', {
                             <div>
                               <Label>{action.config.templateType === 'mjml' ? 'MJML Template' : 'HTML Template'}</Label>
                               <div className="grid grid-cols-2 gap-4">
-                                <div>
+                                <div 
+                                  className="relative"
+                                  onDragOver={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const target = e.currentTarget;
+                                    target.classList.add('bg-blue-50', 'border-blue-300');
+                                  }}
+                                  onDragLeave={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const target = e.currentTarget;
+                                    target.classList.remove('bg-blue-50', 'border-blue-300');
+                                  }}
+                                  onDrop={async (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const target = e.currentTarget;
+                                    target.classList.remove('bg-blue-50', 'border-blue-300');
+
+                                    const files = Array.from(e.dataTransfer.files);
+                                    const file = files[0];
+                                    
+                                    if (!file) return;
+
+                                    // Validate file type
+                                    const isHTML = file.name.endsWith('.html') || file.name.endsWith('.htm');
+                                    const isMJML = file.name.endsWith('.mjml');
+                                    
+                                    if (!isHTML && !isMJML) {
+                                      toast.error('Please drop a valid template file (.html, .htm, or .mjml)');
+                                      return;
+                                    }
+
+                                    // Check if file type matches selected template type
+                                    if ((isHTML && action.config.templateType === 'mjml') || 
+                                        (isMJML && action.config.templateType === 'html')) {
+                                      toast.error(`Please drop a ${action.config.templateType.toUpperCase()} file`);
+                                      return;
+                                    }
+
+                                    try {
+                                      const content = await file.text();
+                                      const newActions = [...selectedRule.actions];
+                                      newActions[index] = {
+                                        ...action,
+                                        config: {
+                                          ...action.config,
+                                          [action.config.templateType === 'mjml' ? 'mjmlTemplate' : 'htmlTemplate']: content,
+                                        },
+                                      };
+                                      setSelectedRule({
+                                        ...selectedRule,
+                                        actions: newActions,
+                                      });
+                                      toast.success('Template loaded successfully');
+                                    } catch (error) {
+                                      toast.error('Failed to load template file');
+                                      console.error('Error loading template:', error);
+                                    }
+                                  }}
+                                >
                                   <Textarea
                                     value={action.config.templateType === 'mjml' ? (action.config.mjmlTemplate || '') : (action.config.htmlTemplate || '')}
                                     onChange={(e) => {
@@ -698,6 +759,13 @@ await fetch('https://api.example.com', {
                                       `<!DOCTYPE html><html><head><title>{{email.subject}}</title></head><body>...</body></html>`
                                     }
                                   />
+                                  <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-transparent transition-colors duration-200">
+                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 bg-blue-50/50 transition-opacity duration-200">
+                                      <p className="text-blue-600 text-center">
+                                        Drop your {action.config.templateType === 'mjml' ? 'MJML' : 'HTML'} template file here
+                                      </p>
+                                    </div>
+                                  </div>
                                 </div>
                                 <div className="border rounded-lg p-4">
                                   <div className="font-semibold mb-2">Available Email Data:</div>
