@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Toggle } from '@/components/ui/toggle';
 import { toast } from 'sonner';
-import { RefreshCw, Trash2, Filter, InboxIcon, FileSliders } from 'lucide-react';
+import { RefreshCw, Trash2, Filter, InboxIcon, FileSliders, CopyPlus } from 'lucide-react';
 import { clientLogger } from '@/lib/logger';
 
 interface Email {
@@ -206,7 +206,7 @@ export const EmailList = () => {
   }
 
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div className="flex flex-1 h-full overflow-hidden">
       {/* Email List */}
       <div className="w-1/3 border-r border-gray-200 overflow-hidden flex flex-col">
         <div className="p-4 border-b border-gray-200">
@@ -253,7 +253,7 @@ export const EmailList = () => {
                 disabled={selectedEmails.size === 0}
                 title="Create filter from selected email"
               >
-                <FileSliders className="h-4 w-4" />
+                <CopyPlus className="h-4 w-4" />
               </Button>
             </div>
           </div>

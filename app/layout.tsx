@@ -4,6 +4,9 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { NavMenu } from '@/app/components/menu';
 import { Header } from '@/app/components/header';
+import { Sidebar } from '@/components/ui/sidebar';
+import { AppSidebar } from './components/nav-sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -20,20 +23,16 @@ export default function RootLayout({
   return (
     <html lang="en" className={`bg-white text-gray-800 ${inter.className}`}>
       <body className="flex h-screen" suppressHydrationWarning>
-        <div className="flex flex-col h-full w-full">
-          {/* Header */}
+        <div className="flex flex-col h-full flex-1">
+          <SidebarProvider>
+            <AppSidebar />
+          </SidebarProvider>
+        </div>
+        <div className="flex flex-col w-full">
           <Header />
-          
-          {/* Main Content */}
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left Navigation */}
-            <div className="w-64 border-r border-gray-200 bg-gray-50">
-              <NavMenu />
-            </div>
-
-            {/* Main Content Area */}
+          <main className="flex-1 overflow-auto">
             {children}
-          </div>
+          </main>
         </div>
         <Toaster />
       </body>

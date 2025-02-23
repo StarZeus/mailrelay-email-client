@@ -10,8 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { TrashIcon, Loader2 } from 'lucide-react';
+import { TrashIcon, Loader2, Plus, X, Edit, Play, Save, PackagePlus, ListPlus, CopyPlus, BadgePlus } from 'lucide-react';
 import { useFilters } from '@/hooks/useFilters';
+import { cn } from '@/lib/utils';
 
 interface FilterRule {
   id: number;
@@ -124,13 +125,16 @@ export default function FiltersPage() {
   }
 
   return (
-    <>
+    <div className="flex flex-1 h-full overflow-hidden">
       {/* Rules List */}
-      <div className="w-[400px] border-r border-gray-200 overflow-y-auto">
+      <div className="w-1/3 border-r border-gray-200 overflow-hidden flex flex-col">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
           <h1 className="text-lg font-semibold">Filters & Actions</h1>
           <Button 
-            size="sm"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            title="Add new rule"
             onClick={() => {
               setSelectedRule({
                 id: 0,
@@ -145,7 +149,8 @@ export default function FiltersPage() {
               setIsEditing(true);
             }}
           >
-            New Rule
+            <CopyPlus className="h-5 w-5" />
+            <span className="sr-only">Add new rule</span>
           </Button>
         </div>
         <div className="divide-y divide-gray-200" data-testid="filter-list">
@@ -190,7 +195,7 @@ export default function FiltersPage() {
       </div>
 
       {/* Rule Details */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="w-2/3 border-r border-gray-200 overflow-hidden flex flex-col">
         {selectedRule ? (
           <div className="h-full">
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
@@ -199,61 +204,72 @@ export default function FiltersPage() {
                   {isEditing ? 'Edit Rule' : 'Rule Details'}
                 </h2>
               </div>
-              <div className="space-x-2">
+              <div className="flex items-center gap-2">
                 {isEditing ? (
                   <>
                     <Button
-                      variant="outline"
-                      size="sm"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      title="Cancel"
                       onClick={() => {
                         setIsEditing(false);
                         refresh();
                       }}
                     >
-                      Cancel
+                      <X className="h-5 w" />
+                      <span className="sr-only">Cancel</span>
                     </Button>
                     <Button
-                      size="sm"
-                      type="submit"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      title="Save rule"
                       onClick={() => handleSave(selectedRule)}
                     >
-                      Save
+                      <Save className="h-5 w" />
+                      <span className="sr-only">Save rule</span>
                     </Button>
                   </>
                 ) : (
                   <>
                     <Button
-                      variant="outline"
-                      size="sm"
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "h-8 w-8",
+                        runningRuleId === selectedRule.id && "animate-spin"
+                      )}
+                      title="Run rule"
                       onClick={() => runRule(selectedRule.id)}
                       disabled={runningRuleId === selectedRule.id || !selectedRule.enabled}
                     >
                       {runningRuleId === selectedRule.id ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Running...
-                        </>
+                        <Loader2 className="h-5 w" />
                       ) : (
-                        'Run Rule'
+                        <Play className="h-5 w" />
                       )}
+                      <span className="sr-only">Run rule</span>
                     </Button>
                     <Button
-                      variant="outline"
-                      size="sm"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      title="Edit rule"
                       onClick={() => setIsEditing(true)}
                     >
-                      Edit
+                      <Edit className="h-5 w" />
+                      <span className="sr-only">Edit rule</span>
                     </Button>
                     <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        if (window.confirm('Are you sure you want to delete this rule?')) {
-                          handleDelete(selectedRule.id);
-                        }
-                      }}
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      title="Delete rule"
+                      onClick={() => handleDelete(selectedRule.id)}
                     >
-                      Delete
+                      <TrashIcon className="h-5 w" />
+                      <span className="sr-only">Delete rule</span>
                     </Button>
                   </>
                 )}
@@ -359,6 +375,10 @@ export default function FiltersPage() {
                   {isEditing && (
                     <Button
                       type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      title="Add new action"
                       onClick={() => {
                         setSelectedRule({
                           ...selectedRule,
@@ -374,7 +394,8 @@ export default function FiltersPage() {
                         });
                       }}
                     >
-                      Add Action
+                      <BadgePlus className="h-5 w" />
+                      <span className="sr-only">Add new action</span>
                     </Button>
                   )}
                 </div>
@@ -418,13 +439,15 @@ export default function FiltersPage() {
                           </Select>
 
                           <Button
-                            variant="destructive"
-                            size="sm"
-                            className="ml-2"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            title="Delete action"
                             onClick={() => handleDeleteAction(selectedRule.id, action.id)}
                             disabled={!isEditing}
                           >
-                            <TrashIcon className="w-4 h-4" />
+                            <TrashIcon className="h-5 w" />
+                            <span className="sr-only">Delete action</span>
                           </Button>
 
                         </div>
@@ -844,6 +867,6 @@ await fetch('https://api.example.com', {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 } 

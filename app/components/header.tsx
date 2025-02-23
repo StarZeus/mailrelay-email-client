@@ -42,29 +42,7 @@ function SearchBar() {
 export function Header() {
   return (
     <ClientWrapper>
-      <header className="h-16 border-b border-gray-200 bg-white px-6 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          {/* Logo */}
-          <div className="flex items-center group cursor-pointer">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg transform transition-all group-hover:scale-105">
-              <Mail className="w-6 h-6" />
-            </div>
-            <div className="ml-3 flex flex-col">
-              <div className="flex items-baseline">
-                <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  MailRelay
-                </span>
-                <span className="ml-2 text-[10px] font-medium uppercase tracking-wider text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                  SMTP Client
-                </span>
-              </div>
-              <span className="text-[11px] text-gray-400 font-medium">
-                Secure Email Processing
-              </span>
-            </div>
-          </div>
-        </div>
-
+      <header className="h-16 border-b border-gray-200 bg-white px-6 flex items-center justify-end">
         {/* Search */}
         <Suspense fallback={
           <div className="max-w-md w-full relative">

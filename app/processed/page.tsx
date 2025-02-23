@@ -109,7 +109,7 @@ function ProcessedEmailList() {
 
   return (
     <>
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 h-full overflow-hidden">
         {/* Rules List */}
         <div className="w-1/3 border-r border-gray-200 overflow-hidden flex flex-col">
           <div className="p-4 border-b border-gray-200">
@@ -167,7 +167,7 @@ function ProcessedEmailList() {
                     </div>
                   </div>
                   {expandedRules.has(ruleName) && (
-                    <div className="pl-4 divide-y divide-gray-200" data-testid="processed-emails">
+                    <div className="divide-y divide-gray-200" data-testid="processed-emails">
                       {emails.map((email) => {
                         const { name, email: parsedEmail } = parseSender(email.email.fromEmail);
                         const formattedDate = format(new Date(email.processedAt), 'MMM dd, h:mm a');
