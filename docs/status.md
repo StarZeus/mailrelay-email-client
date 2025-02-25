@@ -74,6 +74,11 @@
   - Secure sandbox with vm2
   - Timeout protection
   - Result validation
+- ✅ Email Relay action
+  - MJML/HTML template editor with popout window
+  - Draggable JSON tree view for email data
+  - Real-time preview of rendered templates
+  - Handlebars template processing
 - ✅ Common Features
   - Config validation
   - Retry mechanism

@@ -97,7 +97,11 @@ export async function POST(request: Request) {
       let processedCount = 0;
       for (const email of unprocessedEmails) {
         try {
-          const matchedRules = await processEmailWithRules(email, ruleId);
+          const matchedRules = await processEmailWithRules({
+            ...email,
+            sentDate: email.sentDate instanceof Date ? email.sentDate : new Date(email.sentDate || Date.now()),
+            read: email.read === null ? false : email.read,
+          }, ruleId);
           // Only increment count if the rule actually matched and processed the email
           if (matchedRules.length > 0) {
             processedCount++;
@@ -122,7 +126,7 @@ export async function POST(request: Request) {
     const [rule] = await db
       .insert(filterRules)
       .values({
-        name: validatedData.name,
+        name: validatedData.name || '',
         fromPattern: validatedData.fromPattern,
         toPattern: validatedData.toPattern,
         subjectPattern: validatedData.subjectPattern,

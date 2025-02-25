@@ -31,34 +31,41 @@ export async function GET(request: Request) {
       .from(emails);
 
     if (emailId) {
-      baseQuery = baseQuery.where(eq(emails.id, parseInt(emailId)));
+      const query = baseQuery.where(eq(emails.id, parseInt(emailId)));
+      baseQuery = query as typeof baseQuery;
     }
 
     if (unprocessed) {
       // Left join with processedEmails to find emails that haven't been processed
-      baseQuery = baseQuery
+      const joinedQuery = baseQuery
         .leftJoin(
           processedEmails,
           eq(emails.id, processedEmails.emailId)
         )
         .where(isNull(processedEmails.id));
+      
+      baseQuery = joinedQuery as typeof baseQuery;
     }
 
     // Add ordering and limit after the join
-    baseQuery = baseQuery
+    const orderedQuery = baseQuery
       .orderBy(desc(emails.sentDate))
       .limit(PAGE_SIZE + 1);
+    
+    baseQuery = orderedQuery as typeof baseQuery;
 
     if (cursor) {
-      baseQuery = baseQuery.where(
+      const cursorQuery = baseQuery.where(
         sql`${emails.id} < ${parseInt(cursor)}`
       );
+      baseQuery = cursorQuery as typeof baseQuery;
     }
 
     if (q) {
-      baseQuery = baseQuery.where(
+      const searchQuery = baseQuery.where(
         like(emails.subject, `%${q}%`)
       );
+      baseQuery = searchQuery as typeof baseQuery;
     }
 
     const results = await baseQuery;

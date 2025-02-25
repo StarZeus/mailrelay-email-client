@@ -45,15 +45,18 @@
     - [x] Security restrictions
     - [x] Error handling
   - [ ] Email Relay action
-    - [ ] Accept MJML emails template
-    - [ ] Parse incoming email and extract data as JSON
-    - [ ] Make all values in JSON data available as drag and drop data
-    - [ ] Render MJML template in split screen
-    - [ ] Pass data to MJML template
-    - [ ] Return composed email as string
+    - [x] Accept MJML emails template
+    - [x] Parse incoming email and extract data as JSON
+    - [x] Make all values in JSON data available as drag and drop data
+    - [x] Render MJML template in split screen
+    - [x] Pass data to MJML template
+    - [x] Return composed email as string
     - [ ] Send composed email to recipient
     - [ ] Implment ability to extract email recipient from email body
     - [ ] Use data from email body to send email to multiple recipients
+    - [x] Add popout window for MJML/HTML editor
+    - [x] Implement draggable JSON tree view for email data
+    - [x] Real-time preview of rendered template
   - [x] Common Features
     - [x] Config validation
     - [x] Retry mechanism

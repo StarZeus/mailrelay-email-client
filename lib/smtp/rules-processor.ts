@@ -5,7 +5,7 @@ import nodemailer from 'nodemailer';
 import { Kafka } from 'kafkajs';
 import micromatch from 'micromatch';
 import { logger, smtpLogger } from '../logger';
-import Handlebars from 'handlebars';
+import Handlebars from '../handlebars-config';
 import mjml2html from 'mjml';
 
 interface Email {
@@ -588,13 +588,19 @@ async function processEmailRelay(email: Email, config: Record<string, any>) {
         
         // Handle result based on type
         if(result && result.includes(',')) {
-          recipients = result.split(',').map(email => email.trim());
+          recipients = result.split(',').map((email: string) => email.trim());
         } else if (typeof result === 'string') {
           // If it's a single email address
           recipients = [result];
         } else if (Array.isArray(result)) {
           // If it's an array of email addresses
-          recipients = result.filter(r => typeof r === 'string');
+          recipients = [];
+          const resultArray = result as unknown[];
+          for (const r of resultArray) {
+            if (typeof r === 'string') {
+              recipients.push(r);
+            }
+          }
         } else {
           throw new Error('Recipient expression must evaluate to string or array of strings');
         }
