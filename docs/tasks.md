@@ -83,12 +83,8 @@
   - [x] Ability to refresh email list
   - [x] Ability to delete one or multiple emails
   - [x] Ability to select one or multiple emails
-  - [ ] Ability to add filter and action based on selected emails 
-    - [ ] Ability to add filter and action based on email subject
-    - [ ] Ability to add filter and action based on email body
-    - [ ] Ability to add filter and action based on email from email address
-    - [ ] Ability to add filter and action based on email to email address
-  
+  - [x] Ability to add filter and action based on selected emails
+  - [x] Redirect user to filter page with the selected email id as query parameter
 ### 3.2 Processed Emails Page
 - [x] Processed email list
   - [x] Group by rules
@@ -116,11 +112,23 @@
   - [x] Edit existing rules
   - [x] Delete rules
   - [x] Enable/disable rules
+  - [x] When query parameter email id is present, fetch email details from database and prefill rule and actions form with selected emails data for a new rule
+  - [x] Add new action based on selected emails and prefill rule and actions form with selected emails data
 - [x] Action Configuration
   - [x] Forward email setup
   - [x] Webhook configuration
   - [x] Kafka settings
   - [x] JavaScript editor
+      - [ ] Show list of available variables such as from, to, subject, body, body parsed as json object as drag and drop data
+      - [ ] Drag and drop data is parsed as json object and made available to javascript
+      - [ ] Javascript editor capable to receive drag and drop data from top portion
+  - [x] Email relay action
+    - [x] MJML template
+    - [x] HTML template
+    - [ ] Right drawer component wtih two column layout
+    - [ ] Preview of the email that will be sent on the right column
+    - [ ] Drag and drop data is parsed as json object and made available to mjml and html template on the left column top portion
+    - [ ] Bottom portion of the left column template editor that allows drag and drop json data from top portion
 - [x] UI Components
   - [x] Rule form
   - [x] Pattern input

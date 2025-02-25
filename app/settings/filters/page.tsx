@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { TrashIcon, Loader2, Plus, X, Edit, Play, Save, PackagePlus, ListPlus, CopyPlus, BadgePlus } from 'lucide-react';
 import { useFilters } from '@/hooks/useFilters';
 import { cn } from '@/lib/utils';
+import { useSearchParams } from 'next/navigation';
+import { parseSender } from '@/app/components/EmailList';
 
 interface FilterRule {
   id: number;
@@ -34,8 +36,26 @@ interface FilterAction {
 
 export default function FiltersPage() {
   const { filters, loading, error, toggleFilter, deleteFilter, runningRuleId, runRule, refresh } = useFilters();
-  const [selectedRule, setSelectedRule] = useState<FilterRule | null>(null);
+  const searchParams = useSearchParams();
+  const [selectedRule, setSelectedRule] = useState<FilterRule>({
+    id: 0,
+    name: '',
+    fromPattern: '',
+    toPattern: '',
+    subjectPattern: '',
+    enabled: true,
+    operator: 'AND',
+    actions: []
+  });
   const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    // Check for prefilled data from email selection
+    const filterEmailId = searchParams.get('filterEmail');
+    if (filterEmailId) {
+      addNewRuleFromEmail(filterEmailId);
+    }
+  }, [searchParams]);
 
   if (loading) {
     return (
@@ -51,6 +71,30 @@ export default function FiltersPage() {
         Error: {error}
       </div>
     );
+  }
+
+  async function addNewRuleFromEmail(emailId: string) {
+    const emailsPromise = await fetch(`/api/emails?id=${emailId}`);
+    const emailData = await emailsPromise.json();
+
+    if(Array.isArray(emailData.emails) && emailData.emails.length === 0) {
+      toast.error('Email not found');
+      return;
+    }
+
+    const email = emailData.emails[0];
+
+    setSelectedRule({
+      id: 0,
+      name: email.subject,
+      fromPattern: parseSender(email.fromEmail).email,
+      toPattern: parseSender(email.toEmail).email,
+      subjectPattern: email.subject,
+      enabled: true,
+      operator: 'AND',
+      actions: []
+    });
+    setIsEditing(true);
   }
 
   async function handleSave(rule: FilterRule) {
@@ -81,7 +125,16 @@ export default function FiltersPage() {
 
       toast.success('Filter rule deleted successfully');
       refresh();
-      setSelectedRule(null);
+      setSelectedRule({
+        id: 0,
+        name: '',
+        fromPattern: '',
+        toPattern: '',
+        subjectPattern: '',
+        enabled: true,
+        operator: 'AND',
+        actions: []
+      });
     } catch (error) {
       toast.error('Failed to delete filter rule');
     }

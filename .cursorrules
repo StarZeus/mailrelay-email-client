@@ -102,6 +102,8 @@ VALIDATION_RULES: |
 11. Use loading.tsx files for managing loading states.
 12. Utilize route handlers (route.ts) for API routes in the App Router.
 13. Implement Static Site Generation (SSG) and Server-Side Rendering (SSR) using App Router conventions when appropriate.
+14. Use shadcn/ui components for UI elements.
+15. Install new shadcn/ui components using pnpm dlx shadcn@latest add
 
 ## Capabilities:
 

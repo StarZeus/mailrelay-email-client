@@ -13,6 +13,7 @@ export async function GET(request: Request) {
     logger.debug('Fetching emails from database');
     
     const { searchParams } = new URL(request.url);
+    const emailId = searchParams.get('id');  
     const cursor = searchParams.get('cursor');
     const q = searchParams.get('q');
     const unprocessed = searchParams.get('unprocessed') === 'true';
@@ -28,6 +29,10 @@ export async function GET(request: Request) {
         read: emails.read,
       })
       .from(emails);
+
+    if (emailId) {
+      baseQuery = baseQuery.where(eq(emails.id, parseInt(emailId)));
+    }
 
     if (unprocessed) {
       // Left join with processedEmails to find emails that haven't been processed

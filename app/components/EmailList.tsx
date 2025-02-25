@@ -179,14 +179,19 @@ export const EmailList = () => {
 
   const createFilterFromSelection = () => {
     if (selectedEmails.size === 0) return;
-
-    const selectedEmailData = emails.find(email => email.id === Array.from(selectedEmails)[0]);
-    if (!selectedEmailData) return;
-
-    const { fromEmail, toEmail, subject } = selectedEmailData;
-    const { email: fromEmailParsed } = parseSender(fromEmail);
     
-    router.push(`/settings/filters?from=${encodeURIComponent(fromEmailParsed)}&to=${encodeURIComponent(toEmail)}&subject=${encodeURIComponent(subject)}`);
+    // Get the first selected email to base the filter on
+    const selectedEmailIds = Array.from(selectedEmails);
+    
+    // Construct the query parameters
+    const params = new URLSearchParams({
+      filterEmail: selectedEmailIds[0].toString()
+    });
+
+    console.log('params', params.toString());
+
+    // Navigate to filters page with prefilled data
+    router.push(`/settings/filters?${params.toString()}`);
   };
 
   const toggleEmailSelection = (id: number, checked: boolean) => {
