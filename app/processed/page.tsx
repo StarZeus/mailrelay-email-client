@@ -217,7 +217,7 @@ function ProcessedEmailList() {
                                 
                                 <div className="flex items-center gap-2 mt-1">
                                   <div className="text-sm text-gray-500 truncate flex-1">
-                                    {email.email.body}
+                                    {DOMPurify.sanitize(email.email.body, { ALLOWED_TAGS: [] }).slice(0, 100)}
                                   </div>
                                   <span className={`text-xs px-2 py-0.5 rounded-full ${
                                     email.status === 'success' 

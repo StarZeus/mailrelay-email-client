@@ -329,7 +329,9 @@ export const EmailList = () => {
                         }`}>
                           {email.subject}
                         </div>
-                        <div className="text-sm text-gray-500 truncate">{email.body}</div>
+                        <div className="text-sm text-gray-500 truncate">
+                          {DOMPurify.sanitize(email.body, { ALLOWED_TAGS: [] }).slice(0, 100)}
+                        </div>
                       </div>
                     </div>
                   </div>
