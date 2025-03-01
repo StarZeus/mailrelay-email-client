@@ -8,49 +8,51 @@ const transporter = nodemailer.createTransport({
 
 const testEmails = [
   {
-    from: 'Sender name<sender@important.com>',
-    to: 'Recipient <recipient@test.com>',
-    subject: '[IMPORTANT] kafka System Alert',
-    text: 'This is a high priority system alert that requires immediate attention.',
-    attachments: [{
-      filename: 'alert.txt',
-      content: 'Alert details and debug information'
-    }]
-  },
-  {
-    from: 'Sender name<sender@gmail.com>',
-    to: 'Orders <orders@gmail.com>',
-    subject: 'New webhook #12345',
-    text: 'A new order has been placed and needs processing.',
-    attachments: [{
-      filename: 'order.json',
-      content: JSON.stringify({ orderId: 12345, items: ['item1', 'item2'] })
-    }]
-  },
-  {
-    from: 'user name<user@gmail.com>',
-    to: 'support@gmail.com',
-    subject: 'URGENT: Account Access Issue',
-    text: 'I cannot access my account. Please help!',
-  },
-  {
-    from: 'notifications name<notifications@system.com>',
-    to: 'admin@company.com',
-    subject: 'Daily System Report',
-    text: 'Here is your daily system status report.',
-    attachments: [{
-      filename: 'report.csv',
-      content: 'date,status,metric\n2024-02-20,OK,100'
-    }]
-  },
-  {
-    from: 'sender@gmail.com',
+    from: 'sender@hotmail.com',
     to: 'subscribers@company.com',
-    subject: 'Weekly webhook',
-    text: 'Here are this week\'s top stories and updates.',
+    subject: 'Weekly email',
+    text: `<h1>Weekly System Updates</h1>
+        <p>Here are the key updates from this week:</p>
+        
+        <h2>New Features</h2>
+        <ul>
+          <li>Improved webhook reliability</li>
+          <li>Added support for custom templates</li>
+          <li>Enhanced error logging</li>
+          <li>New API endpoints</li>
+        </ul>
+
+        <h2>System Performance</h2>
+        <table border="1" cellpadding="5">
+          <tr>
+            <th>Metric</th>
+            <th>Current</th>
+            <th>Previous</th>
+            <th>Change</th>
+          </tr>
+          <tr>
+            <td>Response Time</td>
+            <td>120ms</td>
+            <td>150ms</td>
+            <td>-20%</td>
+          </tr>
+          <tr>
+            <td>Success Rate</td>
+            <td>99.9%</td>
+            <td>99.5%</td>
+            <td>+0.4%</td>
+          </tr>
+          <tr>
+            <td>Daily Requests</td>
+            <td>250k</td>
+            <td>200k</td>
+            <td>+25%</td>
+          </tr>
+        </table>`,
     attachments: [{
       filename: 'newsletter.html',
-      content: '<h1>Newsletter</h1><p>Content here</p>'
+      content: `<p>For more details, please visit our documentation.</p>
+      `
     }]
   }
 ];

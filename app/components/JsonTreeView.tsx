@@ -85,17 +85,69 @@ export const JsonTreeView: React.FC<JsonTreeViewProps> = ({ data, onDragStart })
 
   const renderValue = (value: any, keyPath: (string | number)[]) => {
     const path = keyPath.slice().reverse().join('.');
+    
+    // Handle Arrays
+    if (Array.isArray(value)) {
+      const template = `{{#each ${path}}}\n  {{this}}\n{{/each}}`;
+      return (
+        <span
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.setData('text/plain', template);
+          }}
+          className="whitespace-pre font-mono text-sm bg-gray-50 px-2 py-1 rounded cursor-move hover:bg-gray-100"
+        >
+          {template}
+        </span>
+      );
+    }
+
+    // Handle Objects
+    if (typeof value === 'object' && value !== null) {
+      const template = `{{#each ${path}}}\n  {{@key}}: {{this}}\n{{/each}}`;
+      return (
+        <span
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.setData('text/plain', template);
+          }}
+          className="whitespace-pre font-mono text-sm bg-gray-50 px-2 py-1 rounded cursor-move hover:bg-gray-100"
+        >
+          {template}
+        </span>
+      );
+    }
+
+    // Handle primitive values
     const stringValue = String(value);
     const isLongValue = stringValue.length > 50;
     const isExpanded = expandedValues.includes(path);
     
     if (!isLongValue) {
-      return <span className="whitespace-nowrap">{stringValue}</span>;
+      return (
+        <span
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.setData('text/plain', `{{${path}}}`);
+          }}
+          className="whitespace-nowrap cursor-move hover:bg-gray-50 px-1 rounded"
+        >
+          {stringValue}
+        </span>
+      );
     }
     
     return (
       <span className="whitespace-nowrap">
-        {isExpanded ? stringValue : stringValue.substring(0, 50) + '...'}
+        <span
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.setData('text/plain', `{{${path}}}`);
+          }}
+          className="cursor-move hover:bg-gray-50 px-1 rounded"
+        >
+          {isExpanded ? stringValue : stringValue.substring(0, 50) + '...'}
+        </span>
         <button 
           onClick={(e) => {
             e.stopPropagation();

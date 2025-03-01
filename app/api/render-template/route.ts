@@ -2,6 +2,81 @@ import { NextRequest, NextResponse } from 'next/server';
 import mjml2html from 'mjml';
 import Handlebars from '@/lib/handlebars-config';
 
+interface HandlebarsOptions {
+  fn: (context: any) => string;
+  inverse: (context: any) => string;
+  data: { path: string };
+}
+
+// Register Handlebars helpers for nested objects and arrays
+Handlebars.registerHelper('json', function(context: any) {
+  return JSON.stringify(context);
+});
+
+// Helper to get array element by index
+Handlebars.registerHelper('arr', function(array: any[], index: number) {
+  if (!Array.isArray(array)) return '';
+  return array[index] || '';
+});
+
+// Helper to safely get nested array element
+Handlebars.registerHelper('get_array_element', function(array: any[], index: number, path?: string) {
+  if (!Array.isArray(array)) return '';
+  const element = array[index];
+  if (path && element) {
+    return path.split('.').reduce((acc: any, part: string) => acc && acc[part], element);
+  }
+  return element || '';
+});
+
+Handlebars.registerHelper('get', function(obj: any, path: string) {
+  return path.split('.').reduce((acc: any, part: string) => acc && acc[part], obj);
+});
+
+Handlebars.registerHelper('each_with_path', function(context: any, options: HandlebarsOptions) {
+  let ret = "";
+  if (Array.isArray(context)) {
+    for (let i = 0; i < context.length; i++) {
+      ret = ret + options.fn({
+        ...context[i],
+        "@index": i,
+        "@path": `${options.data.path}.${i}`
+      });
+    }
+  } else if (typeof context === 'object' && context !== null) {
+    Object.entries(context).forEach(([key, value]) => {
+      ret = ret + options.fn({
+        key,
+        value,
+        "@path": `${options.data.path}.${key}`
+      });
+    });
+  }
+  return ret;
+});
+
+// Helper to safely access nested properties
+Handlebars.registerHelper('lookup_nested', function(obj: any, path: string) {
+  try {
+    return path.split('.').reduce((acc: any, part: string) => {
+      if (acc === undefined || acc === null) return '';
+      return acc[part];
+    }, obj);
+  } catch (e) {
+    return '';
+  }
+});
+
+// Helper for conditional logic
+Handlebars.registerHelper('ifEquals', function(this: any, arg1: any, arg2: any, options: HandlebarsOptions) {
+  return (arg1 == arg2) ? options.fn(this) : options.inverse(this);
+});
+
+// Helper for array operations
+Handlebars.registerHelper('array_length', function(arr: any[]) {
+  return Array.isArray(arr) ? arr.length : 0;
+});
+
 export async function POST(request: NextRequest) {
   try {
     const { template, templateType, data } = await request.json();
@@ -28,66 +103,46 @@ export async function POST(request: NextRequest) {
 
     let html = '';
 
-    if (templateType === 'mjml') {
-      try {
-        // First convert MJML to HTML
-        const mjmlResult = mjml2html(template);
+    try {
+      // First apply Handlebars template with the data
+      const compiledTemplate = Handlebars.compile(template, {
+        strict: false,
+        noEscape: true // Important for HTML content
+      });
+      const processedTemplate = compiledTemplate(templateData);
+
+      // Then if it's MJML, convert to HTML
+      if (templateType === 'mjml') {
+        const mjmlResult = mjml2html(processedTemplate, {
+          validationLevel: 'soft',
+          minify: true
+        });
         
         if (mjmlResult.errors && mjmlResult.errors.length > 0) {
-          return NextResponse.json(
-            { error: 'MJML parsing error', details: mjmlResult.errors },
-            { status: 400 }
-          );
+          console.warn('MJML warnings:', mjmlResult.errors);
         }
         
-        // Then apply Handlebars template with the data
-        try {
-          const compiledTemplate = Handlebars.compile(mjmlResult.html);
-          html = compiledTemplate(templateData);
-          console.log('Successfully compiled MJML template with data');
-        } catch (handlebarsError: any) {
-          console.error('Handlebars compilation error:', handlebarsError);
-          return NextResponse.json(
-            { error: 'Handlebars compilation error', details: handlebarsError.message },
-            { status: 400 }
-          );
-        }
-      } catch (error: any) {
-        console.error('MJML processing error:', error);
-        return NextResponse.json(
-          { error: 'MJML processing error', details: error.message },
-          { status: 400 }
-        );
+        html = mjmlResult.html;
+      } else {
+        html = processedTemplate;
       }
-    } else {
-      // HTML template
-      try {
-        try {
-          const compiledTemplate = Handlebars.compile(template);
-          html = compiledTemplate(templateData);
-          console.log('Successfully compiled HTML template with data');
-        } catch (handlebarsError: any) {
-          console.error('Handlebars compilation error:', handlebarsError);
-          return NextResponse.json(
-            { error: 'Handlebars compilation error', details: handlebarsError.message },
-            { status: 400 }
-          );
-        }
-      } catch (error: any) {
-        console.error('HTML template processing error:', error);
-        return NextResponse.json(
-          { error: 'HTML template processing error', details: error.message },
-          { status: 400 }
-        );
-      }
+
+      console.log('Successfully processed template');
+      return NextResponse.json({ html });
+
+    } catch (error: any) {
+      console.error('Template processing error:', error);
+      return NextResponse.json(
+        { 
+          error: 'Template processing error', 
+          details: error.message,
+          template: template.substring(0, 200) + '...' // First 200 chars for debugging
+        },
+        { status: 400 }
+      );
     }
-
-    // Log the final HTML output
-    console.log('Final HTML output (first 200 chars):', html.substring(0, 200));
-
-    return NextResponse.json({ html });
   } catch (error: any) {
-    console.error('Error rendering template:', error);
+    console.error('Error processing request:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }

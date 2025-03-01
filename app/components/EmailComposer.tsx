@@ -3,10 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 import { JsonTreeView } from './JsonTreeView';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { CodeEditor } from './CodeEditor';
 
 interface EmailComposerProps {
   templateType: 'mjml' | 'html';
@@ -24,11 +24,15 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
   const [template, setTemplate] = useState(initialTemplate);
   const [preview, setPreview] = useState<string>('');
   const [isRendering, setIsRendering] = useState(false);
-  const editorRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<string>('editor');
 
   useEffect(() => {
-    renderPreview();
+    const debounceTimer = setTimeout(() => {
+      renderPreview();
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(debounceTimer);
   }, [template]);
 
   const renderPreview = async () => {
@@ -44,7 +48,7 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
         body: JSON.stringify({
           template,
           templateType,
-          data: emailData,
+          data: {email:emailData},
         }),
       });
       
@@ -88,19 +92,18 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
       const data = e.dataTransfer.getData('text/plain');
       if (!data) return;
       
-      const textarea = editorRef.current;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const value = textarea.value;
-      
-      const newValue = value.substring(0, start) + data + value.substring(end);
-      setTemplate(newValue);
-      
-      // Set cursor position after the inserted text
-      setTimeout(() => {
-        textarea.focus();
-        textarea.setSelectionRange(start + data.length, start + data.length);
-      }, 0);
+      // Insert at cursor position
+      const editor = editorRef.current.querySelector('.cm-content');
+      if (editor) {
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          range.deleteContents();
+          range.insertNode(document.createTextNode(data));
+        } else {
+          setTemplate(prev => prev + data);
+        }
+      }
     }
   };
 
@@ -124,29 +127,35 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
             </TabsList>
             
             <TabsContent value="editor" className="flex-1 p-4 overflow-auto">
-              <Textarea
-                ref={editorRef}
-                value={template}
-                onChange={(e) => setTemplate(e.target.value)}
-                className="font-mono h-full min-h-[400px] resize-none"
-                placeholder={templateType === 'mjml' ? 
-                  `<mjml>
-  <mj-body>
-    <mj-section>
-      <mj-column>
-        <mj-text>{{email.subject}}</mj-text>
-        <mj-divider />
-        <mj-text>{{{email.body}}}</mj-text>
-      </mj-column>
-    </mj-section>
-  </mj-body>
+              <div ref={editorRef}>
+                <CodeEditor
+                  value={template}
+                  onChange={setTemplate}
+                  mode={templateType}
+                  height="calc(100vh - 250px)"
+                  placeholder={templateType === 'mjml' ? 
+                    `<mjml>
+<mj-body>
+  <mj-section>
+    <mj-column>
+      <mj-text>{{email.subject}}</mj-text>
+      <mj-divider />
+      <mj-text>{{{email.body}}}</mj-text>
+    </mj-column>
+  </mj-section>
+</mj-body>
 </mjml>` : 
-                  `<!DOCTYPE html><html><head><title>{{email.subject}}</title></head><body>...</body></html>`
-                }
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              />
+                    `<!DOCTYPE html>
+<html>
+  <head><title>{{email.subject}}</title></head>
+  <body>...</body>
+</html>`
+                  }
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                />
+              </div>
             </TabsContent>
             
             <TabsContent value="preview" className="flex-1 p-4 overflow-auto">
