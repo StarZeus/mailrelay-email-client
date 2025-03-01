@@ -12,6 +12,7 @@ import { Toggle } from '@/components/ui/toggle';
 import { toast } from 'sonner';
 import { RefreshCw, Trash2, Filter, InboxIcon, FileSliders, CopyPlus } from 'lucide-react';
 import { clientLogger } from '@/lib/logger';
+import DOMPurify from 'isomorphic-dompurify';
 
 interface Email {
   id: number;
@@ -21,6 +22,7 @@ interface Email {
   body: string;
   sentDate: string;
   read: boolean;
+  isHtml?: boolean;
 }
 
 export function parseSender(fromEmail: string): { name: string | null; email: string } {
@@ -358,9 +360,18 @@ export const EmailList = () => {
             </div>
             <ScrollArea className="flex-1 p-6">
               <div className="max-w-3xl">
-                <div className="prose" data-testid="email-detail-content">
-                  {selectedEmail.body}
-                </div>
+                <div 
+                  className="prose prose-sm max-w-none" 
+                  data-testid="email-detail-content"
+                  {...(selectedEmail.isHtml 
+                    ? { 
+                        dangerouslySetInnerHTML: { 
+                          __html: DOMPurify.sanitize(selectedEmail.body) 
+                        } 
+                      }
+                    : { children: selectedEmail.body }
+                  )}
+                />
               </div>
             </ScrollArea>
           </>
@@ -372,4 +383,4 @@ export const EmailList = () => {
       </div>
     </div>
   );
-}; 
+};

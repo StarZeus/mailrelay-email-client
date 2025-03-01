@@ -58,6 +58,7 @@ export const emails = pgTable(
     toEmail: varchar('to_email', { length: 255 }).notNull(),
     subject: varchar('subject', { length: 255 }),
     body: text('body'),
+    isHtml: boolean('is_html').default(false),
     sentDate: timestamp('sent_date').defaultNow(),
     read: boolean('read').default(false),
   },

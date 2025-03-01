@@ -19,6 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import DOMPurify from 'isomorphic-dompurify';
 
 interface ProcessedEmail {
   id: number;
@@ -32,7 +33,9 @@ interface ProcessedEmail {
     fromEmail: string;
     toEmail: string;
     sentDate: string;
+    isHtml?: boolean;
   };
+  isHtml?: boolean;
 }
 
 function ProcessedEmailList() {
@@ -53,7 +56,19 @@ function ProcessedEmailList() {
       setLoading(true);
       const res = await fetch('/api/processed-emails');
       const data = await res.json();
-      setProcessedEmails(data.emails);
+      // Add HTML detection
+      const processedData = data.emails.map((email: ProcessedEmail) => ({
+        ...email,
+        email: {
+          ...email.email,
+          isHtml: email.email.body?.toLowerCase().includes('<!doctype html') ||
+                  email.email.body?.toLowerCase().includes('<html') ||
+                  (email.email.body?.includes('<') && email.email.body?.includes('>') &&
+                   (email.email.body?.includes('<div') || email.email.body?.includes('<p') ||
+                    email.email.body?.includes('<table') || email.email.body?.includes('<a')))
+        }
+      }));
+      setProcessedEmails(processedData);
     } catch (error) {
       console.error('Error fetching processed emails:', error);
       toast.error('Failed to fetch processed emails');
@@ -248,36 +263,18 @@ function ProcessedEmailList() {
               </div>
               <ScrollArea className="flex-1 p-6">
                 <div className="max-w-3xl">
-                  <div className="prose" data-testid="email-detail-content">
-                    {selectedEmail.email.body}
-                  </div>
-                  <div className="mt-6 pt-6 border-t">
-                    <h3 className="text-lg font-medium mb-4">Processing Details</h3>
-                    <div className="space-y-2">
-                      <div>
-                        <span className="font-medium">Rule:</span> {selectedEmail.ruleName}
-                      </div>
-                      <div>
-                        <span className="font-medium">Status:</span>{' '}
-                        <span
-                          className={`${
-                            selectedEmail.status === 'success'
-                              ? 'text-green-600'
-                              : 'text-red-600'
-                          }`}
-                        >
-                          {selectedEmail.status}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="font-medium">Processed At:</span>{' '}
-                        {format(
-                          new Date(selectedEmail.processedAt),
-                          'MMM d, yyyy h:mm:ss a'
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <div
+                    className="prose prose-sm max-w-none"
+                    data-testid="email-detail-content"
+                    {...(selectedEmail.email.isHtml
+                      ? {
+                          dangerouslySetInnerHTML: {
+                            __html: DOMPurify.sanitize(selectedEmail.email.body)
+                          }
+                        }
+                      : { children: selectedEmail.email.body }
+                    )}
+                  />
                 </div>
               </ScrollArea>
             </>
@@ -318,4 +315,4 @@ export default function ProcessedPage() {
       <ProcessedEmailList />
     </ClientWrapper>
   );
-} 
+}

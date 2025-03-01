@@ -203,10 +203,20 @@ export async function GET(request: Request) {
     const results = await baseQuery;
     
     // Process results to convert HTML body to JSON when possible
-    const processedResults = results.map(email => ({
-      ...email,
-      bodyJson: email.body ? htmlToJson(email.body) : {body: email.body}
-    }));
+    const processedResults = results.map(email => {
+      // Check if content appears to be HTML
+      const isHtml = email.body?.toLowerCase().includes('<!doctype html') || 
+                    email.body?.toLowerCase().includes('<html') ||
+                    (email.body?.includes('<') && email.body?.includes('>') && 
+                     (email.body?.includes('<div') || email.body?.includes('<p') || 
+                      email.body?.includes('<table') || email.body?.includes('<a')));
+
+      return {
+        ...email,
+        isHtml,
+        bodyJson: email.body ? htmlToJson(email.body) : {body: email.body}
+      };
+    });
 
     logger.info({
       msg: 'Emails fetched successfully',

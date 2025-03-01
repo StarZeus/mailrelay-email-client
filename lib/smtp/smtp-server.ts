@@ -38,8 +38,6 @@ export class EmailServer {
     try {
       sessionLogger.debug({ msg: 'Processing incoming email', session });
       
-      
-      // Convert stream to string first
       let rawEmail = '';
       stream.on('data', (chunk: Buffer) => {
         rawEmail += chunk;
@@ -53,12 +51,17 @@ export class EmailServer {
       const email: ParsedMail = await simpleParser(rawEmail);
       sessionLogger.trace({ msg: 'Email parsed', emailId: email.messageId });
 
+      // Detect if the email is HTML
+      const isHtml = email.html !== false;
+      const emailBody = isHtml ? email.html : email.text;
+
       // Store email and attachments in database
       const emailRecord = await db.insert(emails).values({
         fromEmail: email.from?.text || '',
         toEmail: Array.isArray(email.to) ? email.to.map(t => t.text).join(', ') : email.to?.text || '',
         subject: email.subject || '',
-        body: email.text || '',
+        body: emailBody || '',
+        isHtml: isHtml,
         sentDate: new Date(),
         read: false
       }).returning();
@@ -138,4 +141,4 @@ export class EmailServer {
     smtpLogger.info({ msg: 'Stopping SMTP server' });
     this.server.close();
   }
-} 
+}
