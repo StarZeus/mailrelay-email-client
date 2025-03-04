@@ -91,10 +91,15 @@ export const JsonTreeView: React.FC<JsonTreeViewProps> = ({ data, onDragStart })
     }
   };
 
+  const createObjectTemplate = (path: string) => `{{#each ${path}}}\n  {{@key}}: {{this}}\n{{/each}}`;
+
+  const createValueTemplate = (path: string) => `{{${path}}}`;
+
   const createArrayTemplate = (path: string) => {
     // Check if it's a nested array of objects
     const pathParts = path.split('.');
-    const value = getValueFromPath(data, pathParts.reverse());
+    const value = getValueFromPath(data, pathParts);
+    console.log('createArrayTemplate value', pathParts, data, value);
     
     if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
       return `{{#each ${path}}}
@@ -161,55 +166,39 @@ export const JsonTreeView: React.FC<JsonTreeViewProps> = ({ data, onDragStart })
     setDraggedPath(null);
   }, []);
 
-  const createObjectTemplate = (path: string) => `{{#each ${path}}}\n  {{@key}}: {{this}}\n{{/each}}`;
-
-  const createValueTemplate = (path: string) => `{{${path}}}`;
-
   const renderValue = useCallback((value: any, keyPath: (string | number)[]) => {
     const path = keyPath.slice().reverse().join('.');
     
+    // Create a reusable component for templated values (arrays and objects)
+    const renderTemplatedValue = (template: string) => (
+      <span
+        draggable="true"
+        onDragStart={(e) => {
+          setDraggedPath(path);
+          e.dataTransfer.setData('text/plain', template);
+          setupDragImage(e, path, template);
+          if (onDragStart) {
+            onDragStart(path, value);
+          }
+        }}
+        onDragEnd={createDragEndHandler()}
+        className={cn(
+          "whitespace-pre font-mono text-sm bg-gray-50 px-2 py-1 rounded cursor-move hover:bg-gray-100 select-none",
+          draggedPath === path && 'bg-blue-100 opacity-50'
+        )}
+      >
+        {template}
+      </span>
+    );
+    
     // Handle Arrays
     if (Array.isArray(value)) {
-      const template = createArrayTemplate(path);
-      return (
-        <span
-          draggable="true"
-          onDragStart={(e) => {
-            setDraggedPath(path);
-            e.dataTransfer.setData('text/plain', template);
-            setupDragImage(e, path, template);
-          }}
-          onDragEnd={createDragEndHandler()}
-          className={cn(
-            "whitespace-pre font-mono text-sm bg-gray-50 px-2 py-1 rounded cursor-move hover:bg-gray-100 select-none",
-            draggedPath === path && 'bg-blue-100 opacity-50'
-          )}
-        >
-          {template}
-        </span>
-      );
+      return renderTemplatedValue(createArrayTemplate(path));
     }
 
     // Handle Objects
     if (typeof value === 'object' && value !== null) {
-      const template = createObjectTemplate(path);
-      return (
-        <span
-          draggable="true"
-          onDragStart={(e) => {
-            setDraggedPath(path);
-            e.dataTransfer.setData('text/plain', template);
-            setupDragImage(e, path, template);
-          }}
-          onDragEnd={createDragEndHandler()}
-          className={cn(
-            "whitespace-pre font-mono text-sm bg-gray-50 px-2 py-1 rounded cursor-move hover:bg-gray-100 select-none",
-            draggedPath === path && 'bg-blue-100 opacity-50'
-          )}
-        >
-          {template}
-        </span>
-      );
+      return renderTemplatedValue(createObjectTemplate(path));
     }
 
     // Handle primitive values
@@ -218,33 +207,24 @@ export const JsonTreeView: React.FC<JsonTreeViewProps> = ({ data, onDragStart })
     const isExpanded = expandedValues.includes(path);
     const template = createValueTemplate(path);
     
+    const primitiveSpanProps = {
+      draggable: "true",
+      onDragStart: createDragHandler(path, template, value),
+      onDragEnd: createDragEndHandler(),
+      className: cn(
+        "cursor-move hover:bg-gray-50 px-1 rounded select-none",
+        draggedPath === path && 'bg-blue-100 opacity-50',
+        !isLongValue && "whitespace-nowrap"
+      )
+    };
+    
     if (!isLongValue) {
-      return (
-        <span
-          draggable="true"
-          onDragStart={createDragHandler(path, template, value)}
-          onDragEnd={createDragEndHandler()}
-          className={cn(
-            "whitespace-nowrap cursor-move hover:bg-gray-50 px-1 rounded select-none",
-            draggedPath === path && 'bg-blue-100 opacity-50'
-          )}
-        >
-          {stringValue}
-        </span>
-      );
+      return <span {...primitiveSpanProps}>{stringValue}</span>;
     }
     
     return (
       <span className="whitespace-nowrap">
-        <span
-          draggable="true"
-          onDragStart={createDragHandler(path, template, value)}
-          onDragEnd={createDragEndHandler()}
-          className={cn(
-            "cursor-move hover:bg-gray-50 px-1 rounded select-none",
-            draggedPath === path && 'bg-blue-100 opacity-50'
-          )}
-        >
+        <span {...primitiveSpanProps}>
           {isExpanded ? stringValue : stringValue.substring(0, 50) + '...'}
         </span>
         <button 
@@ -258,11 +238,11 @@ export const JsonTreeView: React.FC<JsonTreeViewProps> = ({ data, onDragStart })
         </button>
       </span>
     );
-  }, [createDragHandler, createDragEndHandler, draggedPath, expandedValues]);
+  }, [createDragHandler, createDragEndHandler, draggedPath, expandedValues, onDragStart]);
 
   const getValueFromPath = (obj: any, path: (string | number)[]) => {
     let current = obj;
-    for (let i = 0; i < path.length; i++) {
+    for (let i = 1; i < path.length; i++) {
       if (current === undefined || current === null) return undefined;
       current = current[path[i]];
     }
@@ -274,7 +254,7 @@ export const JsonTreeView: React.FC<JsonTreeViewProps> = ({ data, onDragStart })
 
   return (
     <div className="border rounded-lg p-4 bg-white h-full flex flex-col">
-      <div className="font-semibold mb-2">Email Data Structure:</div>
+      <div className="font-semibold mb-2">Available Email Data:</div>
       <div className="overflow-auto flex-grow max-h-[600px]">
         <div className="overflow-x-auto">
           <JSONTree

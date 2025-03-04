@@ -23,10 +23,14 @@ const editorTheme = EditorView.theme({
     height: '100%',
     fontSize: '14px',
     backgroundColor: 'white',
+    display: 'flex',
+    flexDirection: 'column'
   },
   '.cm-scroller': {
     fontFamily: 'monospace',
     lineHeight: '1.6',
+    flex: '1 1 auto',
+    overflow: 'auto'
   },
   '&.cm-editor.cm-focused': {
     outline: 'none',
@@ -48,6 +52,12 @@ const editorTheme = EditorView.theme({
   },
   '.cm-content': {
     padding: '8px 0',
+    minHeight: '100%'
+  },
+  '.cm-editor': {
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column'
   },
 });
 
@@ -97,15 +107,15 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   return (
     <div
       ref={editorRef}
-      style={{ height }}
-      className="border rounded-md overflow-hidden"
+      className="h-full overflow-hidden flex flex-col"
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
       <CodeMirror
         value={value}
-        height={height}
+        className="flex-1 overflow-auto border-t border-gray-200"
+        height="100%"
         extensions={[getLanguageExtension(), editorTheme]}
         onChange={onChange}
         placeholder={placeholder}
@@ -139,4 +149,4 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       />
     </div>
   );
-}; 
+};
