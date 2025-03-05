@@ -22,9 +22,9 @@ const theme = {
   base08: '#fa4d56', // red
   base09: '#ff832b', // orange
   base0A: '#f1c21b', // yellow
-  base0B: '#42be65', // green
+  base0B: '#808080', // green
   base0C: '#08bdba', // cyan
-  base0D: '#0f62fe', // blue
+  base0D: '#f1c21b', // blue
   base0E: '#8a3ffc', // violet
   base0F: '#ff7eb6', // pink
 };
@@ -131,25 +131,28 @@ export const JsonTreeView: React.FC<JsonTreeViewProps> = ({ data, onDragStart })
 
     return (
       <span
-        draggable="true"
-        onDragStart={(e) => {
-          setDraggedPath(path);
-          const template = getTemplate();
-          setupDragImage(e, path, template);
-          e.dataTransfer.setData('text/plain', template);
-          if (onDragStart) {
-            onDragStart(path, value);
-          }
-        }}
-        onDragEnd={() => setDraggedPath(null)}
         className={cn(
-          "py-1 px-2 rounded cursor-move hover:bg-gray-100 inline-flex items-center whitespace-nowrap select-none",
+          "py-1 px-2 rounded cursor-move hover:bg-gray-100 inline-flex items-center whitespace-nowrap select-none text-gray-700",
           nodeType === 'Object' || nodeType === 'Array' ? 'font-semibold' : 'font-normal',
-          draggedPath === path && 'bg-blue-100 opacity-50'
+          draggedPath === path && 'bg-gray-100 opacity-50'
         )}
       >
         <span className="mr-2">⋮⋮</span>
-        <span>{String(key)}</span>
+        <span
+          draggable="true"
+          onDragStart={(e) => {
+            setDraggedPath(path);
+            const template = getTemplate();
+            setupDragImage(e, path, template);
+            e.dataTransfer.setData('text/plain', template);
+            if (onDragStart) {
+              onDragStart(path, value);
+            }
+          }}
+          onDragEnd={() => setDraggedPath(null)}
+        >
+          {String(key)}
+        </span>
       </span>
     );
   };
@@ -172,19 +175,8 @@ export const JsonTreeView: React.FC<JsonTreeViewProps> = ({ data, onDragStart })
     // Create a reusable component for templated values (arrays and objects)
     const renderTemplatedValue = (template: string) => (
       <span
-        draggable="true"
-        onDragStart={(e) => {
-          setDraggedPath(path);
-          e.dataTransfer.setData('text/plain', template);
-          setupDragImage(e, path, template);
-          if (onDragStart) {
-            onDragStart(path, value);
-          }
-        }}
-        onDragEnd={createDragEndHandler()}
         className={cn(
-          "whitespace-pre font-mono text-sm bg-gray-50 px-2 py-1 rounded cursor-move hover:bg-gray-100 select-none",
-          draggedPath === path && 'bg-blue-100 opacity-50'
+          "whitespace-pre font-mono text-sm bg-gray-50 px-2 py-1 rounded select-none text-gray-400 text-sm"
         )}
       >
         {template}
@@ -208,12 +200,8 @@ export const JsonTreeView: React.FC<JsonTreeViewProps> = ({ data, onDragStart })
     const template = createValueTemplate(path);
     
     const primitiveSpanProps = {
-      draggable: "true",
-      onDragStart: createDragHandler(path, template, value),
-      onDragEnd: createDragEndHandler(),
       className: cn(
-        "cursor-move hover:bg-gray-50 px-1 rounded select-none",
-        draggedPath === path && 'bg-blue-100 opacity-50',
+        "px-1 rounded select-none text-gray-400 text-sm",
         !isLongValue && "whitespace-nowrap"
       )
     };
@@ -232,13 +220,13 @@ export const JsonTreeView: React.FC<JsonTreeViewProps> = ({ data, onDragStart })
             e.stopPropagation();
             toggleValueExpansion(path);
           }}
-          className="ml-2 text-xs text-blue-500 hover:underline select-none"
+          className="ml-2 text-xs text-gray-500 hover:underline select-none"
         >
           {isExpanded ? 'Show less' : 'Show more'}
         </button>
       </span>
     );
-  }, [createDragHandler, createDragEndHandler, draggedPath, expandedValues, onDragStart]);
+  }, [expandedValues, toggleValueExpansion]);
 
   const getValueFromPath = (obj: any, path: (string | number)[]) => {
     let current = obj;
@@ -254,7 +242,7 @@ export const JsonTreeView: React.FC<JsonTreeViewProps> = ({ data, onDragStart })
 
   return (
     <div className="border rounded-lg p-4 bg-white h-full flex flex-col">
-      <div className="font-semibold mb-2">Available Email Data:</div>
+      <div className="font-semibold mb-2">Available Email Data</div>
       <div className="overflow-auto flex-grow max-h-[600px]">
         <div className="overflow-x-auto">
           <JSONTree
