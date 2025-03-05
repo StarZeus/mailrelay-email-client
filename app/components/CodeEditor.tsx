@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { html } from '@codemirror/lang-html';
 import { javascript } from '@codemirror/lang-javascript';
-import { EditorView, ViewPlugin } from '@codemirror/view';
+import { EditorView } from '@codemirror/view';
 
 interface CodeEditorProps {
   value: string;
@@ -24,18 +24,18 @@ const editorTheme = EditorView.theme({
     height: '100%',
     fontSize: '14px',
     backgroundColor: 'white',
-    display: 'flex',
-    flexDirection: 'column'
+    borderRight: '1px solid #e2e8f0'
   },
   '.cm-scroller': {
     fontFamily: 'monospace',
-    lineHeight: '1.6',
-    height: '100%',
-    flex: '1 1 auto',
-    overflow: 'auto'
+    lineHeight: '1.6'
   },
-  '&.cm-editor.cm-focused': {
-    outline: 'none',
+  '.cm-content': {
+    padding: '8px 0'
+  },
+  '.cm-editor': {
+    height: '100%',
+    overflow: 'auto'
   },
   '.cm-line': {
     padding: '0 4px',
@@ -52,23 +52,6 @@ const editorTheme = EditorView.theme({
     padding: '0 8px 0 4px',
     color: '#64748b',
   },
-  '.cm-content': {
-    padding: '8px 0',
-    minHeight: '100%'
-  },
-  '.cm-editor': {
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column'
-  },
-});
-
-const heightPlugin = ViewPlugin.fromClass(class {
-  update(update: any) {
-    if (update.view.dom.parentElement) {
-      update.view.dom.parentElement.style.height = '100%';
-    }
-  }
 });
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
@@ -77,86 +60,76 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   mode,
   placeholder,
   className,
-  height = '400px',
+  height = '100%', // Changed default from 400px to 100%
   onDrop,
   onDragOver,
   onDragLeave,
   readOnly = false,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<EditorView | null>(null);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    if (onDrop) {
-      onDrop(e);
+  useEffect(() => {
+    if (editorRef.current) {
+      const resizeObserver = new ResizeObserver(() => {
+        if (viewRef.current) {
+          viewRef.current.requestMeasure();
+        }
+      });
+      
+      resizeObserver.observe(editorRef.current);
+      return () => resizeObserver.disconnect();
     }
-  }, [onDrop]);
+  }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    if (onDragOver) {
-      onDragOver(e);
-    }
-  }, [onDragOver]);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    if (onDragLeave) {
-      onDragLeave(e);
-    }
-  }, [onDragLeave]);
-
-  const getLanguageExtension = () => {
+  const getLanguageExtension = useCallback(() => {
     switch (mode) {
-      case 'javascript':
-        return javascript();
       case 'html':
       case 'mjml':
         return html();
+      case 'javascript':
+        return javascript();
       default:
         return html();
     }
-  };
+  }, [mode]);
 
   return (
-    <div
+    <div 
       ref={editorRef}
-      className={`flex h-full ${className || ''}`}
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
+      className={`relative h-full overflow-auto ${className || ''}`}
+      style={{
+        position: 'relative'
+      }}
+      onDrop={onDrop}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
     >
-      <CodeMirror
-        value={value}
-        className="flex-1 overflow-auto"
-        extensions={[getLanguageExtension(), editorTheme, heightPlugin]}
-        onChange={onChange}
-        placeholder={placeholder}
-        readOnly={readOnly}
-        basicSetup={{
-          lineNumbers: true,
-          highlightActiveLineGutter: true,
-          highlightSpecialChars: true,
-          history: true,
-          foldGutter: true,
-          drawSelection: true,
-          dropCursor: true,
-          allowMultipleSelections: true,
-          indentOnInput: true,
-          syntaxHighlighting: true,
-          bracketMatching: true,
-          closeBrackets: true,
-          autocompletion: true,
-          rectangularSelection: true,
-          crosshairCursor: true,
-          highlightActiveLine: true,
-          highlightSelectionMatches: true,
-          closeBracketsKeymap: true,
-          defaultKeymap: true,
-          searchKeymap: true,
-          historyKeymap: true,
-          foldKeymap: true,
-          completionKeymap: true,
-          lintKeymap: true,
-        }}
-      />
+      <div className="h-full">
+        <CodeMirror
+          value={value}
+          onChange={onChange}
+          extensions={[
+            getLanguageExtension(),
+            editorTheme,
+            EditorView.lineWrapping,
+            EditorView.scrollMargins.of(() => ({top: 0, bottom: 0})),
+            EditorView.updateListener.of(update => {
+              if (update.view) {
+                viewRef.current = update.view;
+              }
+            })
+          ]}
+          placeholder={placeholder}
+          className="h-full"
+          readOnly={readOnly}
+          basicSetup={{
+            lineNumbers: true,
+            highlightActiveLineGutter: true,
+            highlightActiveLine: true
+          }}
+        />
+      </div>
     </div>
   );
 };

@@ -65,9 +65,11 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
 
   const evaluateRecipients = () => {
     try {
-      // If it's the default expression, just use the toEmail directly
+      // If it's the default expression, check if toEmail exists and is not empty
       if (recipientExpression === 'email.toEmail') {
-        setEvaluatedRecipients([emailData.toEmail]);
+        if (emailData?.toEmail) {
+          setEvaluatedRecipients([emailData.toEmail]);
+        }
         return;
       }
 
@@ -202,44 +204,49 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
               <TabsTrigger value="preview">Preview</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="editor" className="flex-1 mt-0">
-              <CodeEditor
-                value={template}
-                onChange={setTemplate}
-                mode={templateType}
-                placeholder={templateType === 'mjml' ? 
-                  `<mjml>
-<mj-body>
-  <mj-section>
-    <mj-column>
-      <mj-text>{{email.subject}}</mj-text>
-      <mj-divider />
-      <mj-text>
-        <ul style="list-style-type: disc; padding-left: 20px;">
-          {{#each email.items}}
-            <li style="margin-bottom: 10px;">{{this}}</li>
-          {{/each}}
-        </ul>
-      </mj-text>
-      <mj-text>{{{email.body}}}</mj-text>
-    </mj-column>
-  </mj-section>
-</mj-body>
+            <TabsContent value="editor" className="flex-1 mt-0 overflow-hidden">
+              <div 
+                ref={editorRef} 
+                className="h-full border-t border-b" 
+              >
+                <CodeEditor
+                  value={template}
+                  onChange={setTemplate}
+                  mode={templateType}
+                  placeholder={templateType === 'mjml' ? 
+                    `<mjml>
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-text>{{email.subject}}</mj-text>
+        <mj-divider />
+        <mj-text>
+          <ul style="list-style-type: disc; padding-left: 20px;">
+            {{#each email.items}}
+              <li style="margin-bottom: 10px;">{{this}}</li>
+            {{/each}}
+          </ul>
+        </mj-text>
+        <mj-text>{{{email.body}}}</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
 </mjml>` : 
-                  `<!DOCTYPE html>
+                    `<!DOCTYPE html>
 <html>
   <head><title>{{email.subject}}</title></head>
   <body>...</body>
 </html>`
-                }
-                className="h-full px-4"
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-              />
+                  }
+                  className="px-4"
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                />
+              </div>
             </TabsContent>
             
-            <TabsContent value="preview" className="flex-1 mt-0">
+            <TabsContent value="preview" className="flex-1 mt-0 overflow-hidden h-full flex flex-col">
               <div className="p-4 border-b">
                 <div className="flex flex-col gap-2">
                   {evaluatedRecipients.length > 0 && (
@@ -256,20 +263,22 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
                   )}
                 </div>
               </div>
-              <ScrollArea className="h-full">
-                {isRendering ? (
-                  <div className="grid place-items-center h-full p-4">
-                    <div className="text-center">
-                      <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                      <p className="text-gray-500">Rendering preview...</p>
+              <div className="flex-1 overflow-hidden">
+                <ScrollArea className="h-full">
+                  {isRendering ? (
+                    <div className="grid place-items-center h-full p-4">
+                      <div className="text-center">
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                        <p className="text-gray-500">Rendering preview...</p>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="bg-white border rounded-lg m-4">
-                    <div className="p-4" dangerouslySetInnerHTML={{ __html: preview }} />
-                  </div>
-                )}
-              </ScrollArea>
+                  ) : (
+                    <div className="bg-white border rounded-lg m-4">
+                      <div className="p-4" dangerouslySetInnerHTML={{ __html: preview }} />
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
