@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EmailComposer } from './EmailComposer';
 
@@ -9,8 +9,9 @@ interface EmailComposerDialogProps {
   onOpenChange: (open: boolean) => void;
   templateType: 'mjml' | 'html';
   initialTemplate: string;
+  initialRecipientExpression?: string;
   emailData: any;
-  onSave: (template: string) => void;
+  onSave: (template: string, recipientExpression: string) => void;
 }
 
 export const EmailComposerDialog: React.FC<EmailComposerDialogProps> = ({
@@ -18,11 +19,12 @@ export const EmailComposerDialog: React.FC<EmailComposerDialogProps> = ({
   onOpenChange,
   templateType,
   initialTemplate,
+  initialRecipientExpression,
   emailData,
   onSave,
 }) => {
-  const handleSave = (template: string) => {
-    onSave(template);
+  const handleSave = (template: string, recipientExpression: string) => {
+    onSave(template, recipientExpression);
     onOpenChange(false);
   };
 
@@ -38,6 +40,7 @@ export const EmailComposerDialog: React.FC<EmailComposerDialogProps> = ({
           <EmailComposer
             templateType={templateType}
             initialTemplate={initialTemplate}
+            initialRecipientExpression={initialRecipientExpression}
             emailData={emailData}
             onSave={handleSave}
           />
@@ -45,4 +48,4 @@ export const EmailComposerDialog: React.FC<EmailComposerDialogProps> = ({
       </DialogContent>
     </Dialog>
   );
-}; 
+};

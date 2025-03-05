@@ -201,7 +201,7 @@ export default function FiltersPage() {
     setComposerOpen(true);
   };
 
-  const handleSaveTemplate = (template: string) => {
+  const handleSaveTemplate = (template: string, recipientExpression: string) => {
     if (currentActionIndex === null || !selectedRule) return;
     
     const newActions = [...selectedRule.actions];
@@ -212,6 +212,7 @@ export default function FiltersPage() {
       config: {
         ...action.config,
         [action.config.templateType === 'mjml' ? 'mjmlTemplate' : 'htmlTemplate']: template,
+        recipientExpression: recipientExpression,
       },
     };
     
@@ -220,7 +221,7 @@ export default function FiltersPage() {
       actions: newActions,
     });
     
-    toast.success('Template saved successfully');
+    toast.success('Template and recipient expression saved successfully');
   };
 
   return (
@@ -1011,10 +1012,11 @@ if (email.subject.includes('urgent')) {
               ? selectedRule.actions[currentActionIndex || 0]?.config?.mjmlTemplate || ''
               : selectedRule.actions[currentActionIndex || 0]?.config?.htmlTemplate || ''
           }
+          initialRecipientExpression={selectedRule.actions[currentActionIndex || 0]?.config?.recipientExpression || 'email.toEmail'}
           emailData={emailData}
-          onSave={handleSaveTemplate}f
+          onSave={handleSaveTemplate}
         />
       )}
     </>
   );
-} 
+}

@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { html } from '@codemirror/lang-html';
 import { javascript } from '@codemirror/lang-javascript';
-import { EditorView } from '@codemirror/view';
+import { EditorView, ViewPlugin } from '@codemirror/view';
 
 interface CodeEditorProps {
   value: string;
@@ -12,6 +12,7 @@ interface CodeEditorProps {
   mode: 'html' | 'javascript' | 'mjml';
   placeholder?: string;
   height?: string;
+  className?: string;
   onDrop?: (e: React.DragEvent) => void;
   onDragOver?: (e: React.DragEvent) => void;
   onDragLeave?: (e: React.DragEvent) => void;
@@ -29,6 +30,7 @@ const editorTheme = EditorView.theme({
   '.cm-scroller': {
     fontFamily: 'monospace',
     lineHeight: '1.6',
+    height: '100%',
     flex: '1 1 auto',
     overflow: 'auto'
   },
@@ -61,11 +63,20 @@ const editorTheme = EditorView.theme({
   },
 });
 
+const heightPlugin = ViewPlugin.fromClass(class {
+  update(update: any) {
+    if (update.view.dom.parentElement) {
+      update.view.dom.parentElement.style.height = '100%';
+    }
+  }
+});
+
 export const CodeEditor: React.FC<CodeEditorProps> = ({
   value,
   onChange,
   mode,
   placeholder,
+  className,
   height = '400px',
   onDrop,
   onDragOver,
@@ -107,16 +118,15 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   return (
     <div
       ref={editorRef}
-      className="h-full overflow-hidden flex flex-col"
+      className={`flex h-full ${className || ''}`}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
       <CodeMirror
         value={value}
-        className="flex-1 overflow-auto border-t border-gray-200"
-        height="100%"
-        extensions={[getLanguageExtension(), editorTheme]}
+        className="flex-1 overflow-auto"
+        extensions={[getLanguageExtension(), editorTheme, heightPlugin]}
         onChange={onChange}
         placeholder={placeholder}
         readOnly={readOnly}

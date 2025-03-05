@@ -7,23 +7,29 @@ import { JsonTreeView } from './JsonTreeView';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { CodeEditor } from './CodeEditor';
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { ScrollArea } from "@/components/ui/scroll-area";
+import Handlebars from '@/lib/handlebars-config';
+import { Input } from '@/components/ui/input';
 
 interface EmailComposerProps {
   templateType: 'mjml' | 'html';
   initialTemplate: string;
+  initialRecipientExpression?: string;
   emailData: any;
-  onSave: (template: string) => void;
+  onSave: (template: string, recipientExpression: string) => void;
 }
 
 export const EmailComposer: React.FC<EmailComposerProps> = ({
   templateType,
   initialTemplate,
+  initialRecipientExpression = 'email.toEmail',
   emailData,
   onSave,
 }) => {
   const [template, setTemplate] = useState(initialTemplate);
+  const [recipientExpression, setRecipientExpression] = useState(initialRecipientExpression);
   const [preview, setPreview] = useState<string>('');
+  const [evaluatedRecipients, setEvaluatedRecipients] = useState<string[]>([]);
   const [isRendering, setIsRendering] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<string>('editor');
@@ -45,10 +51,10 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
     }
   }, [activeTab]);
 
-  // Mark preview as needing update when template changes
+  // Mark preview as needing update when template or recipient expression changes
   useEffect(() => {
     setPreviewNeedsUpdate(true);
-  }, [template]);
+  }, [template, recipientExpression]);
 
   // Only render preview when switching to preview tab
   useEffect(() => {
@@ -57,11 +63,56 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
     }
   }, [activeTab]);
 
+  const evaluateRecipients = () => {
+    try {
+      // If it's the default expression, just use the toEmail directly
+      if (recipientExpression === 'email.toEmail') {
+        setEvaluatedRecipients([emailData.toEmail]);
+        return;
+      }
+
+      // Handle Handlebars-style expressions
+      const template = Handlebars.compile(recipientExpression);
+      const result = template({ email: emailData });
+
+      let recipients: string[];
+      if (typeof result === 'string') {
+        if (result.includes(',')) {
+          recipients = result.split(',').map((email: string) => email.trim());
+        } else {
+          recipients = [result];
+        }
+      } else if (Array.isArray(result)) {
+        // Cast the array to unknown first, then filter it
+        recipients = (result as unknown[]).filter((r): r is string => typeof r === 'string');
+      } else {
+        throw new Error('Recipient expression must evaluate to string or array of strings');
+      }
+
+      // Basic email validation
+      recipients = recipients.filter(email => 
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+      );
+
+      if (recipients.length === 0) {
+        throw new Error('No valid email addresses found');
+      }
+
+      setEvaluatedRecipients(recipients);
+    } catch (error) {
+      console.error('Error evaluating recipient expression:', error);
+      toast.error('Failed to evaluate recipient expression');
+      setEvaluatedRecipients([]);
+    }
+  };
+
   const renderPreview = async () => {
     if (!template) return;
     
     setIsRendering(true);
     try {
+      evaluateRecipients();
+      
       const response = await fetch('/api/render-template', {
         method: 'POST',
         headers: {
@@ -136,30 +187,28 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 flex min-h-0 overflow-hidden">
-        <div className="w-1/3 border-r">
+    <div className="grid h-full grid-rows-[1fr_auto]">
+      <div className="grid h-full grid-cols-[1fr_2fr] overflow-hidden">
+        <div className="border-r h-full">
           <ScrollArea className="h-full p-4">
             <JsonTreeView data={emailData} onDragStart={handleJsonDragStart} />
           </ScrollArea>
         </div>
         
-        <div className="w-2/3 flex flex-col min-h-0">
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col min-h-0">
-            <TabsList className="mx-4 mt-2 flex-shrink-0">
+        <div className="h-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="flex h-full flex-col">
+            <TabsList className="mx-4 mt-2 sticky top-0 z-10">
               <TabsTrigger value="editor">Editor</TabsTrigger>
               <TabsTrigger value="preview">Preview</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="editor" className="flex-1 overflow-hidden">
-              <ScrollArea className="h-full">
-                <div className="px-4 h-full" ref={editorRef}>
-                  <CodeEditor
-                    value={template}
-                    onChange={setTemplate}
-                    mode={templateType}
-                    placeholder={templateType === 'mjml' ? 
-                      `<mjml>
+            <TabsContent value="editor" className="flex-1 mt-0">
+              <CodeEditor
+                value={template}
+                onChange={setTemplate}
+                mode={templateType}
+                placeholder={templateType === 'mjml' ? 
+                  `<mjml>
 <mj-body>
   <mj-section>
     <mj-column>
@@ -177,24 +226,39 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
   </mj-section>
 </mj-body>
 </mjml>` : 
-                      `<!DOCTYPE html>
+                  `<!DOCTYPE html>
 <html>
   <head><title>{{email.subject}}</title></head>
   <body>...</body>
 </html>`
-                    }
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                  />
-                </div>
-              </ScrollArea>
+                }
+                className="h-full px-4"
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+              />
             </TabsContent>
             
-            <TabsContent value="preview" className="flex-1 overflow-hidden">
+            <TabsContent value="preview" className="flex-1 mt-0">
+              <div className="p-4 border-b">
+                <div className="flex flex-col gap-2">
+                  {evaluatedRecipients.length > 0 && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-sm font-medium text-gray-700">Recipients:</span>
+                      <div className="flex-1">
+                        {evaluatedRecipients.map((recipient, index) => (
+                          <div key={index} className="text-sm text-gray-600">
+                            {recipient}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
               <ScrollArea className="h-full">
                 {isRendering ? (
-                  <div className="flex items-center justify-center h-full p-4">
+                  <div className="grid place-items-center h-full p-4">
                     <div className="text-center">
                       <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
                       <p className="text-gray-500">Rendering preview...</p>
@@ -211,8 +275,18 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
         </div>
       </div>
       
-      <div className="p-4 border-t flex justify-end space-x-2 bg-white">
-        <Button variant="outline" onClick={() => onSave(template)}>
+      <div className="p-4 border-t flex items-center justify-end space-x-4 bg-white">
+        <div className="flex-1 flex items-center space-x-2">
+          <label className="text-sm font-medium text-gray-700">Recipients</label>
+          <Input
+            type="text"
+            value={recipientExpression}
+            onChange={(e) => setRecipientExpression(e.target.value)}
+            className="flex-1 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-blue-500"
+            placeholder="email.toEmail or custom expression to extract recipients"
+          />
+        </div>
+        <Button variant="outline" onClick={() => onSave(template, recipientExpression)}>
           Save Template
         </Button>
       </div>
