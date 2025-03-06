@@ -106,6 +106,16 @@ pnpm start
 - `KAFKA_CLIENT_ID`: Kafka client identifier
 - `JWT_SECRET`: JWT signing secret
 
+## Authentication
+
+This application supports OpenID Connect (OIDC) authentication. For detailed setup instructions, see [OIDC Setup Guide](docs/oidc-setup.md).
+
+Supported OIDC providers:
+- Auth0
+- Okta
+- Azure AD
+- Any standard OIDC-compliant provider
+
 ## Email Filter Rules
 
 1. Access the Filters & Actions section in the web client
