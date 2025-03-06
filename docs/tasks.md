@@ -211,9 +211,31 @@
 ## 6. Deployment
 - [x] Docker Setup
   - [x] Dockerfile
-  - [x] Docker Compose
-  - [x] Environment configuration
-- [ ] CI/CD Pipeline
+  - [x] Environment configuration  
+  - [ ] Docker Compose
+    - [ ] create required docker compose files under hosting/docker directory in root
+    - [ ] .env file creation with required default env values
+    - [ ] docker-compose.yml file with below services. Except mailrelay-smtp-client all services are optional and should be configurable through .env file
+      - [ ] 1. mailrelay-smt-client in APP_MODE=smtp-client-ui
+      - [ ] 2. mailrelay-smt-client in APP_MODE=smtp
+      - [ ] 3. postgres server
+      - [ ] 4. kafka server 
+      - [ ] 5. kafka-ui to view kafka messages
+      - [ ] 6. mailhog to test emails
+      - [ ] 6. mockserver to receive webhook
+  - [ ] Kubernetes
+    - [ ] create required helm chart under hosting/k8s directory in root
+    - [ ] create values.yaml file with required default env values
+    - [ ] deployment, statefulset, service, configmap, ingress files for below services. Except mailrelay-smtp-client all services are optional and should be configurable through values.yaml file
+      - [ ] 1. mailrelay-smtp-client in APP_MODE=smtp-client-ui
+      - [ ] 2. mailrelay-smtp-client in APP_MODE=smtp
+      - [ ] 3. postgres server
+      - [ ] 4. kafka server 
+      - [ ] 5. kafka-ui to view kafka messages
+      - [ ] 6. mailhog to test emails
+      - [ ] 6. mockserver to receive webhook      
+
+## 7. CI/CD Pipeline
   - [x] GitHub Actions
   - [ ] Automated testing
   - [ ] Deployment automation

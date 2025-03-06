@@ -24,7 +24,7 @@ ENV NEXT_SKIP_TYPECHECK=1
 RUN npm install -g pnpm tsx
 
 # Build Next.js only
-RUN pnpm next build
+RUN pnpm build
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -60,11 +60,12 @@ RUN chown -R nextjs:nodejs .
 
 USER nextjs
 
-EXPOSE 3000
-EXPOSE 2525
-
 ENV PORT=3000
 ENV SMTP_SERVER_PORT=2525
+ENV APP_MODE=smtp-with-client-ui
+
+EXPOSE ${PORT}
+EXPOSE ${SMTP_SERVER_PORT}
 
 # Start the application using tsx
 CMD ["tsx", "server.ts"] 
