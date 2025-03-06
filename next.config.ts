@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 
 const config: NextConfig = {
+  output: 'standalone',
+  distDir: '.next',
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -11,10 +13,8 @@ const config: NextConfig = {
     ppr: true,
     dynamicIO: true,
     serverSourceMaps: true,
-    swcMinify: true,
   },
   serverExternalPackages: ['mjml', 'uglify-js', 'html-minifier', 'mjml-core', 'mjml-parser-xml', 'mjml-validator'],
-  output: 'standalone',
   webpack: (config) => {
     // Exclude problematic packages from webpack bundling
     config.externals.push('html-minifier');

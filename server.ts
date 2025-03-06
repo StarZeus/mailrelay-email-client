@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Get app mode from environment variable APP_MODE = smtp or smtp-client-ui or smtp-with-client-ui
-const mode = process.env.APP_MODE || 'smtp';
+const mode = process.env.APP_MODE || 'smtp-with-client-ui';
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = parseInt(process.env.PORT || '3000', 10);

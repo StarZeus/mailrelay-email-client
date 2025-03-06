@@ -3,10 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
@@ -55,14 +53,13 @@ export default function FiltersPage() {
   const [emailData, setEmailData] = useState({
     email: {
       id: 123,
-      subject: "Sample Email Subject",
-      fromEmail: "sender@example.com",
-      toEmail: "recipient@example.com",
-      body: "<p>This is a sample email body with <strong>HTML</strong> content.</p>",
+      subject: "<<Email Subject>>",
+      fromEmail: "<<Sender Email>>",
+      toEmail: "<<Recipient Email>>",
+      body: "<<Email Body>>",
+      bodyJson: {},
       sentDate: new Date().toISOString(),
       attachments: [
-        { filename: "document.pdf", contentType: "application/pdf", size: 1024 * 1024 },
-        { filename: "image.jpg", contentType: "image/jpeg", size: 512 * 1024 }
       ]
     }
   });
