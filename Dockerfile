@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -72,4 +72,4 @@ EXPOSE ${PORT}
 EXPOSE ${SMTP_SERVER_PORT}
 
 # Run migrations and start server
-CMD pnpm drizzle-kit push:pg && tsx server.ts 
+CMD npm run drizzle-kit push:pg && npm run start 
