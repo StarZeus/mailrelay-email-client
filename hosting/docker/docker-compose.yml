@@ -1,12 +1,10 @@
-version: '3.8'
-
 services:
   # Main application in UI mode
   mailrelay-smtp-client-ui:
     build:
       context: ../../
       dockerfile: Dockerfile
-    image: starzeus/mailrelay-email-client:sha-43c4d54
+    image: starzeus/mailrelay-email-client:0.0.2
     container_name: mailrelay-smtp-client-ui
     environment:
       - NODE_ENV=production
@@ -29,7 +27,7 @@ services:
     build:
       context: ../../
       dockerfile: Dockerfile
-    image: starzeus/mailrelay-email-client:sha-43c4d54
+    image: starzeus/mailrelay-email-client:0.0.2
     container_name: mailrelay-smtp-server
     environment:
       - NODE_ENV=production
