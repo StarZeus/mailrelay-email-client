@@ -1,0 +1,31 @@
+{{- if and .Values.smtpClientUi.enabled .Values.smtpClientUi.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-smtp-client-ui
+  labels:
+    app: {{ .Release.Name }}-smtp-client-ui
+  {{- with .Values.smtpClientUi.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.smtpClientUi.ingress.className }}
+  ingressClassName: {{ .Values.smtpClientUi.ingress.className }}
+  {{- end }}
+  rules:
+    {{- range .Values.smtpClientUi.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ $.Release.Name }}-smtp-client-ui
+                port:
+                  number: {{ $.Values.smtpClientUi.service.port }}
+          {{- end }}
+    {{- end }}
+{{- end }} 

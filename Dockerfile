@@ -55,6 +55,10 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy additional files needed for migrations
+COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
+
 # Set permissions for the nextjs user
 RUN chown -R nextjs:nodejs .
 
@@ -67,5 +71,5 @@ ENV APP_MODE=smtp-with-client-ui
 EXPOSE ${PORT}
 EXPOSE ${SMTP_SERVER_PORT}
 
-# Start the application using tsx
-CMD ["tsx", "server.ts"] 
+# Run migrations and start server
+CMD pnpm drizzle-kit push:pg && tsx server.ts 

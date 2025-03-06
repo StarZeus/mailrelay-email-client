@@ -1,0 +1,6 @@
+apiVersion: v2
+name: mailrelay
+description: A Helm chart for Mail Relay SMTP Client and Server
+type: application
+version: 0.1.0
+appVersion: "1.0.0" 

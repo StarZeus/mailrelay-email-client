@@ -1,0 +1,33 @@
+{{- if .Values.smtpServer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-smtp-server
+  labels:
+    app: {{ .Release.Name }}-smtp-server
+spec:
+  replicas: {{ .Values.smtpServer.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-smtp-server
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-smtp-server
+    spec:
+      containers:
+        - name: {{ .Release.Name }}-smtp-server
+          image: "{{ .Values.smtpServer.image.repository }}:{{ .Values.smtpServer.image.tag }}"
+          imagePullPolicy: {{ .Values.smtpServer.image.pullPolicy }}
+          ports:
+            - name: smtp
+              containerPort: {{ .Values.smtpServer.env.SMTP_SERVER_PORT | default "2526" | int }}
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.smtpServer.env }}
+            - name: {{ $key }}
+              value: "{{ $value }}"
+            {{- end }}
+          resources:
+            {{- toYaml .Values.smtpServer.resources | nindent 12 }}
+{{- end }} 

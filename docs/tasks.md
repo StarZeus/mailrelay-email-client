@@ -19,15 +19,15 @@
   - [x] Parse incoming emails
   - [x] Extract metadata (subject, from, to, date)
   - [x] Store in database
-  - [ ] Trigger rule processing
-- [ ] Rule Processing Engine
-  - [X] Pattern matching implementation
-    - [X] Email address patterns
-    - [X] Subject patterns
-  - [X] Rule evaluation logic
-    - [X] AND/OR operators
-    - [X] Multiple rule matching
-- [X] Action Execution System
+  - [x] Trigger rule processing
+- [x] Rule Processing Engine
+  - [x] Pattern matching implementation
+    - [x] Email address patterns
+    - [x] Subject patterns
+  - [x] Rule evaluation logic
+    - [x] AND/OR operators
+    - [x] Multiple rule matching
+- [x] Action Execution System
   - [x] Forward email action
     - [x] SMTP client setup
     - [x] Template processing
@@ -44,16 +44,16 @@
     - [x] Sandbox setup
     - [x] Security restrictions
     - [x] Error handling
-  - [ ] Email Relay action
+  - [x] Email Relay action
     - [x] Accept MJML emails template
     - [x] Parse incoming email and extract data as JSON
     - [x] Make all values in JSON data available as drag and drop data
     - [x] Render MJML template in split screen
     - [x] Pass data to MJML template
     - [x] Return composed email as string
-    - [ ] Send composed email to recipient
-    - [ ] Implment ability to extract email recipient from email body
-    - [ ] Use data from email body to send email to multiple recipients
+    - [x] Send composed email to recipient
+    - [x] Implment ability to extract email recipient from email body
+    - [x] Use data from email body to send email to multiple recipients
     - [x] Add popout window for MJML/HTML editor
     - [x] Implement draggable JSON tree view for email data
     - [x] Real-time preview of rendered template
@@ -122,16 +122,16 @@
   - [x] Webhook configuration
   - [x] Kafka settings
   - [x] JavaScript editor
-      - [ ] Show list of available variables such as from, to, subject, body, body parsed as json object as drag and drop data
-      - [ ] Drag and drop data is parsed as json object and made available to javascript
-      - [ ] Javascript editor capable to receive drag and drop data from top portion
+      - [x] Show list of available variables such as from, to, subject, body, body parsed as json object as drag and drop data
+      - [x] Drag and drop data is parsed as json object and made available to javascript
+      - [x] Javascript editor capable to receive drag and drop data from top portion
   - [x] Email relay action
     - [x] MJML template
     - [x] HTML template
-    - [ ] Right drawer component wtih two column layout
-    - [ ] Preview of the email that will be sent on the right column
-    - [ ] Drag and drop data is parsed as json object and made available to mjml and html template on the left column top portion
-    - [ ] Bottom portion of the left column template editor that allows drag and drop json data from top portion
+    - [x] Right drawer component wtih two column layout
+    - [x] Preview of the email that will be sent on the right column
+    - [x] Drag and drop data is parsed as json object and made available to mjml and html template on the left column top portion
+    - [x] Bottom portion of the left column template editor that allows drag and drop json data from top portion
 - [x] UI Components
   - [x] Rule form
   - [x] Pattern input
@@ -173,7 +173,7 @@
     - [x] Emails API
     - [x] Filter Rules API
     - [x] Processed Emails API
-- [ ] Integration Tests
+- [x] Integration Tests
   - [x] Email processing flow
     - [x] Complete pipeline testing
     - [x] Multiple rule matching
@@ -189,7 +189,7 @@
     - [x] Kafka integration
     - [x] JavaScript sandbox
     - [x] Error handling
-- [ ] E2E Tests
+- [x] E2E Tests
   - [x] Web UI flows
     - [x] Inbox page functionality
     - [x] Processed emails page

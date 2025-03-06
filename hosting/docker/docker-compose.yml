@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  # Main application in UI mode
+  mailrelay-smtp-client-ui:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    image: starzeus/mailrelay-email-client:sha-43c4d54
+    container_name: mailrelay-smtp-client-ui
+    environment:
+      - NODE_ENV=production
+      - APP_MODE=smtp-client-ui
+      - PORT=${PORT:-3000}
+      - SMTP_SERVER_PORT=${SMTP_SERVER_PORT:-2525}
+      - POSTGRES_URL=${POSTGRES_URL:-postgres://postgres:postgres@postgres:5432/postgres}
+      - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:9092}
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+      - "${SMTP_SERVER_PORT:-2525}:${SMTP_SERVER_PORT:-2525}"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - mailrelay-network
+
+  # SMTP server only mode
+  mailrelay-smtp-server:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    image: starzeus/mailrelay-email-client:sha-43c4d54
+    container_name: mailrelay-smtp-server
+    environment:
+      - NODE_ENV=production
+      - APP_MODE=smtp
+      - SMTP_SERVER_PORT=${SMTP_SERVER_PORT:-2526}
+      - POSTGRES_URL=${POSTGRES_URL:-postgres://postgres:postgres@postgres:5432/postgres}
+      - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:9092}
+    ports:
+      - "${SMTP_SERVER_PORT:-2526}:${SMTP_SERVER_PORT:-2526}"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - mailrelay-network
+
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    container_name: mailrelay-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - mailrelay-network
+
+  # Kafka
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: mailrelay-kafka
+    environment:
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    ports:
+      - "${KAFKA_PORT:-9092}:9092"
+    volumes:
+      - kafka-data:/bitnami/kafka
+    restart: unless-stopped
+    networks:
+      - mailrelay-network
+
+  # Kafka UI
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: mailrelay-kafka-ui
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=mailrelay
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+    ports:
+      - "${KAFKA_UI_PORT:-8080}:8080"
+    depends_on:
+      - kafka
+    restart: unless-stopped
+    networks:
+      - mailrelay-network
+
+  # MailHog for testing emails
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailrelay-mailhog
+    ports:
+      - "${MAILHOG_SMTP_PORT:-1025}:1025"
+      - "${MAILHOG_UI_PORT:-8025}:8025"
+    restart: unless-stopped
+    networks:
+      - mailrelay-network
+
+  # MockServer for webhook testing
+  mockserver:
+    image: mockserver/mockserver:latest
+    container_name: mailrelay-mockserver
+    environment:
+      - MOCKSERVER_SERVER_PORT=1080
+      - MOCKSERVER_LOG_LEVEL=INFO
+    ports:
+      - "${MOCKSERVER_PORT:-1080}:1080"
+    restart: unless-stopped
+    networks:
+      - mailrelay-network
+
+networks:
+  mailrelay-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  kafka-data: 
