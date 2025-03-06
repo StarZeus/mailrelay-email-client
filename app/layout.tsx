@@ -7,7 +7,10 @@ import { Header } from '@/app/components/header';
 import { Sidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from './components/nav-sidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
-
+import { getServerSession } from "next-auth";
+import { authOptions } from "./api/auth/[...nextauth]/route";
+import { AuthProvider } from './components/providers/session-provider';
+import { Suspense } from 'react';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
@@ -15,26 +18,29 @@ export const metadata: Metadata = {
   description: 'An email client template using the Next.js App Router.',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+
   return (
     <html lang="en" className={`bg-white text-gray-800 ${inter.className}`}>
       <body className="flex h-screen" suppressHydrationWarning>
-        <div className="flex flex-col h-full flex-1">
-          <SidebarProvider>
-            <AppSidebar />
-          </SidebarProvider>
-        </div>
-        <div className="flex flex-col w-full">
-          <Header />
-          <main className="flex-1 overflow-auto">
-            {children}
-          </main>
-        </div>
-        <Toaster />
+          <AuthProvider>
+            <div className="flex flex-col h-full flex-1">
+                <SidebarProvider>
+                  <AppSidebar />
+                </SidebarProvider>
+            </div>
+            <div className="flex flex-col w-full">
+              <Header />
+                <main className="flex-1 overflow-auto">
+                  {children}
+                </main>
+            </div>
+            <Toaster />
+          </AuthProvider>
       </body>
     </html>
   );

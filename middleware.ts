@@ -1,32 +1,24 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { createRequestLogger } from './lib/logger';
+import { withAuth } from "next-auth/middleware"
 
-export async function middleware(request: NextRequest) {
-  const logger = createRequestLogger(request);
-  
-  logger.info({
-    msg: 'Incoming request',
-    headers: Object.fromEntries(request.headers),
-  });
-
-  const response = NextResponse.next();
-  
-  // Add request ID to response headers
-  const requestId = request.headers.get('x-request-id') || crypto.randomUUID();
-  response.headers.set('x-request-id', requestId);
-
-  return response;
-}
+export default withAuth(
+  function middleware(req) {
+    return null
+  },
+  {
+    callbacks: {
+      authorized({ req, token }) {
+        const isLoggedIn = !!token
+        const isAuthPage = req.nextUrl.pathname.startsWith('/api/auth')
+        
+        if (isAuthPage) {
+          return true
+        }
+        return isLoggedIn
+      }
+    }
+  }
+)
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
-  ],
-}; 
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+}

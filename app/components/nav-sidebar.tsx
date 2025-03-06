@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Calendar, FileStack, Home, Inbox, Search, Settings, Mail, MailCheck } from "lucide-react"
+import { Calendar, FileStack, Home, Inbox, Search, Settings, Mail, MailCheck, LogOut, User } from "lucide-react"
+import { useSession, signOut } from "next-auth/react";
 
 import {
     Sidebar,
@@ -17,6 +18,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
     SidebarHeader,
+    SidebarFooter,
     useSidebar,
 } from "@/components/ui/sidebar"
 
@@ -24,6 +26,7 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> { }
 
 export function AppSidebar() {
     const pathname = usePathname();
+    const { data: session } = useSession();
 
     const {
         state,
@@ -79,20 +82,51 @@ export function AppSidebar() {
                               <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`flex items-center space-x-1 px-6 py-4 rounded ${
-                                  pathname === item.href
-                                    ? 'bg-blue-50 text-blue-700 font-medium'
-                                    : 'text-gray-700 hover:bg-gray-100'
-                                }`}
+                                className={cn(
+                                  'flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900',
+                                  pathname === item.href ? 'bg-gray-100 text-gray-900' : ''
+                                )}
                               >
                                 {item.icon}
-                                <span className="pl-2">{item.label}</span>
+                                <span className="text-sm font-medium">{item.label}</span>
                               </Link>
                             ))}
                         </nav>
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarContent>
+            <SidebarFooter className="border-t">
+                {session?.user && (
+                    <div className="flex items-center gap-3 px-3 py-2">
+                        {session.user.image ? (
+                            <img
+                                src={session.user.image}
+                                alt={session.user.name || "User"}
+                                className="h-8 w-8 rounded-full"
+                            />
+                        ) : (
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+                                <User className="h-4 w-4 text-gray-500" />
+                            </div>
+                        )}
+                        <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-900">
+                                {session.user.name}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                                {session.user.email}
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => signOut()}
+                            className="ml-auto flex h-8 w-8 items-center justify-center rounded-md hover:bg-gray-100"
+                        >
+                            <LogOut className="h-4 w-4" />
+                            <span className="sr-only">Sign out</span>
+                        </button>
+                    </div>
+                )}
+            </SidebarFooter>
         </Sidebar>
     );
 }
