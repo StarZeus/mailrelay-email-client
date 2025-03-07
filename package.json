@@ -1,6 +1,6 @@
 {
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "scripts": {
     "dev": "NODE_ENV=development next dev",
     "build": "next build",
@@ -14,7 +14,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "npx tsx lib/db/migrate.ts",
     "db:studio": "drizzle-kit studio",
-    "db:update": "pnpm db:generate && pnpm db:migrate",    
+    "db:update": "pnpm db:generate && pnpm db:migrate",
     "test": "npx jest",
     "test:watch": "npx jest --watch",
     "test:coverage": "npx jest --coverage",
