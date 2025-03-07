@@ -27,6 +27,8 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> { }
 export function AppSidebar() {
     const pathname = usePathname();
     const { data: session } = useSession();
+    const { collapsed } = useSidebar();
+    const isOIDCEnabled = process.env.OIDC_AUTH_ENABLED === 'true';
 
     const {
         state,
@@ -96,7 +98,7 @@ export function AppSidebar() {
                 </SidebarGroup>
             </SidebarContent>
             <SidebarFooter className="border-t">
-                {session?.user && (
+                {isOIDCEnabled && session?.user && (
                     <div className="flex items-center gap-3 px-3 py-2">
                         {session.user.image ? (
                             <img

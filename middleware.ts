@@ -7,6 +7,10 @@ export default withAuth(
   {
     callbacks: {
       authorized({ req, token }) {
+        if (process.env.OIDC_AUTH_ENABLED !== 'true') {
+          return true
+        }
+        
         const isLoggedIn = !!token
         const isAuthPage = req.nextUrl.pathname.startsWith('/api/auth')
         

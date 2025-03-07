@@ -3,7 +3,7 @@ import { AuthOptions } from "next-auth"
 
 export const authOptions: AuthOptions = {
   providers: [
-    {
+    ...(process.env.OIDC_AUTH_ENABLED === 'true' ? [{
       id: "oidc",
       name: "OIDC Provider",
       type: "oauth",
@@ -11,7 +11,7 @@ export const authOptions: AuthOptions = {
       authorization: { params: { scope: "openid profile email" } },
       clientId: process.env.OIDC_CLIENT_ID,
       clientSecret: process.env.OIDC_CLIENT_SECRET,
-      profile(profile) {
+      profile(profile: any) {
         return {
           id: profile.sub,
           name: profile.name,
@@ -19,7 +19,7 @@ export const authOptions: AuthOptions = {
           image: profile.picture,
         }
       },
-    },
+    }] : []),
   ],
   callbacks: {
     async jwt({ token, account, profile }) {
