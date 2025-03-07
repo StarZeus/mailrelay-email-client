@@ -1,5 +1,6 @@
 {
   "private": true,
+  "version": "1.0.1",
   "scripts": {
     "dev": "NODE_ENV=development next dev",
     "build": "next build",
