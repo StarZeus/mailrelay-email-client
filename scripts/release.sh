@@ -20,7 +20,6 @@ if git tag -l "v$VERSION" | grep -q "v$VERSION"; then
   # Bump version in package.json
   npm version $VERSION
   git add package.json
-  git commit -m "Bump version to $VERSION"
   git push origin main
   git push origin "v$VERSION"
 fi
