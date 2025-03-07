@@ -37,8 +37,8 @@ ENV HOST=0.0.0.0
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Install tsx globally in production
-RUN npm install -g tsx
+# Install tsx and drizzle-kit globally in production
+RUN npm install -g tsx drizzle-kit
 
 # Copy necessary files and directories
 COPY --from=builder /app/public ./public
