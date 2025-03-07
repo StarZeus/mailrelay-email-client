@@ -15,7 +15,7 @@ if git tag -l "v$VERSION" | grep -q "v$VERSION"; then
   echo "Version $VERSION already tagged. Bumping version..."
   # Bump minor version
   VERSION=$(node -p "require('./package.json').version")
-  VERSION=$(echo $VERSION | awk -F. '{print $1"."$2+1}')
+  VERSION=$(echo $VERSION | awk -F. '{print $1"."$2+1".0"}')
   
   # Bump version in package.json
   npm version $VERSION
