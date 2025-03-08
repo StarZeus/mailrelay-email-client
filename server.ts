@@ -3,6 +3,7 @@ import { parse } from 'url';
 import next from 'next';
 import { EmailServer } from './lib/smtp/smtp-server';
 import dotenv from 'dotenv';
+import { exec } from 'child_process';
 
 dotenv.config();
 
@@ -16,17 +17,25 @@ const port = parseInt(process.env.PORT || '3000', 10);
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
-// Initialize SMTP Server
-const smtpServer = new EmailServer({
+
+const smtpServerConfig = {
   port: parseInt(process.env.SMTP_SERVER_PORT || '2525', 10),
   host: process.env.SMTP_SERVER_HOST,
   secure: process.env.SMTP_SERVER_SECURE === 'true',
   authOptional: process.env.SMTP_SERVER_AUTH_OPTIONAL !== 'false',
-});
+}
+
+// Initialize SMTP Server
+const smtpServer = new EmailServer(smtpServerConfig);
 
 async function start() {
   try {
+    console.log(
+      `**************************************************`
+    );
     console.log('Starting server in mode:', mode);
+    
+
     if (mode === 'smtp-client' || mode === 'all') {
       // Prepare Next.js
       await app.prepare();
@@ -42,17 +51,19 @@ async function start() {
           res.end('Internal Server Error');
         }
       }).listen(port, () => {
+        // Pretty print server url
+        console.log(`> SMTP Client URL: http://${hostname}:${port}`);
+
         console.log(
           `**************************************************`
         );
-        // Pretty print server url
-        console.log(`> Next.js server URL: http://${hostname}:${port}`);
       });
     }
 
     if (mode === 'smtp-server' || mode === 'all') {
       // Start SMTP server
       await smtpServer.start();
+      console.log(`> SMTP Server URL: http://${hostname}:${smtpServerConfig.port}`);
     }
 
     // Handle graceful shutdown
