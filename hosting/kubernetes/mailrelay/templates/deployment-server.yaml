@@ -56,7 +56,11 @@ spec:
               value: {{ .Release.Name }}-kafka:9092
           envFrom:
             - secretRef:
+                {{- if .Values.mailrelay.existingSecretName }}  
+                name: {{ .Values.mailrelay.existingSecretName }}
+                {{- else }}
                 name: {{ .Release.Name }}-secrets
+                {{- end }}
           resources:
             {{- toYaml .Values.mailrelay.server.resources | nindent 12 }}
           livenessProbe:

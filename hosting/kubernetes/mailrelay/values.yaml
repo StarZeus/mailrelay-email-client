@@ -91,6 +91,9 @@ mailrelay:
       appMode: smtp-server
       smtpServerPort: "2526"
 
+  # Add ability to set values from existing secrets
+  existingSecretName: ""
+
   # Sensitive data to be stored in secrets
   secrets:
     nextauthSecret: "your-32-character-secret-key-here"
