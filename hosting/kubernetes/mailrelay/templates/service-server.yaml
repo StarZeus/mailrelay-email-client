@@ -1,0 +1,19 @@
+{{- if .Values.mailrelay.server.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-smtp-server
+  labels:
+    {{- include "mailrelay.labels" . | nindent 4 }}
+    app.kubernetes.io/component: smtp-server
+spec:
+  type: {{ .Values.mailrelay.server.service.type }}
+  ports:
+    - port: {{ .Values.mailrelay.server.service.smtpPort }}
+      targetPort: smtp
+      protocol: TCP
+      name: smtp
+  selector:
+    {{- include "mailrelay.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: smtp-server
+{{- end }} 

@@ -1,0 +1,21 @@
+apiVersion: v2
+name: mailrelay
+description: A Helm chart for Mailrelay Email Client and its dependencies
+type: application
+version: 0.1.0
+appVersion: "1.7.0"
+maintainers:
+  - name: "Mailrelay Team"
+dependencies:
+  - name: postgresql
+    version: "12.5.6"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: kafka
+    version: "22.1.5"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: kafka.enabled
+  - name: mailhog
+    version: "5.0.0"
+    repository: "https://codecentric.github.io/helm-charts"
+    condition: mailhog.enabled 

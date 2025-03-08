@@ -1,0 +1,168 @@
+# Global settings
+global:
+  environment: production
+  storageClass: standard
+  registry:
+    url: ""  # e.g., "docker.io" or "registry.example.com"
+    imagePullSecrets: []  # e.g., [{ name: "regcred" }]
+  scheduler:
+    name: ""  # Leave empty to use default scheduler
+    tolerations: []
+    nodeSelector: {}
+    affinity: {}
+
+# Mailrelay Email Client settings
+mailrelay:
+  # SMTP Client Configuration
+  client:
+    enabled: true
+    image:
+      registry: ""  # Overrides global.registry.url if set
+      repository: starzeus/mailrelay-email-client
+      tag: v1.7.0
+      pullPolicy: IfNotPresent
+    
+    replicaCount: 1
+    
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+    service:
+      type: ClusterIP
+      uiPort: 3000
+      smtpPort: 2525
+
+    ingress:
+      enabled: true
+      className: nginx
+      annotations: {}
+      hosts:
+        - host: mailrelay.local
+          paths:
+            - path: /
+              pathType: Prefix
+
+    config:
+      nodeEnv: production
+      appMode: smtp-client
+      nextauthUrl: "http://localhost:3000"
+      oidcAuthEnabled: "false"
+
+  # SMTP Server Configuration
+  server:
+    enabled: true
+    image:
+      registry: ""  # Overrides global.registry.url if set
+      repository: starzeus/mailrelay-email-client
+      tag: v1.7.0
+      pullPolicy: IfNotPresent
+    
+    replicaCount: 1
+    
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+    service:
+      type: ClusterIP
+      smtpPort: 2525
+
+    config:
+      nodeEnv: production
+      appMode: smtp-server
+      smtpServerPort: "2526"
+
+  # Sensitive data to be stored in secrets
+  secrets:
+    nextauthSecret: "your-32-character-secret-key-here"
+    oidcIssuerUrl: ""
+    oidcClientId: ""
+    oidcClientSecret: ""
+    postgresUrl: ""
+
+# Optional Dependencies
+postgresql:
+  enabled: true
+  image:
+    registry: ""  # Overrides global.registry.url if set
+  auth:
+    username: postgres
+    password: xxxxxxxx
+    database: postgres
+  primary:
+    persistence:
+      enabled: true
+      storageClass: "${global.storageClass}"
+      size: 10Gi
+
+kafka:
+  enabled: true
+  image:
+    registry: ""  # Overrides global.registry.url if set
+  persistence:
+    enabled: true
+    storageClass: "${global.storageClass}"
+    size: 10Gi
+  zookeeper:
+    enabled: false
+  kraft:
+    enabled: true
+  listeners:
+    client:
+      protocol: PLAINTEXT
+  sasl:
+    enabled: false
+
+kafka-ui:
+  enabled: true
+  image:
+    registry: ""  # Overrides global.registry.url if set
+    repository: provectuslabs/kafka-ui
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 8080
+  ingress:
+    enabled: true
+    className: nginx
+    hosts:
+      - host: kafka-ui.local
+        paths:
+          - path: /
+            pathType: Prefix
+
+mailhog:
+  enabled: true
+  image:
+    registry: ""  # Overrides global.registry.url if set
+  service:
+    type: ClusterIP
+    smtpPort: 1025
+    uiPort: 8025
+  ingress:
+    enabled: true
+    className: nginx
+    hosts:
+      - host: mailhog.local
+        paths:
+          - path: /
+            pathType: Prefix
+
+mockserver:
+  enabled: true
+  image:
+    registry: ""  # Overrides global.registry.url if set
+    repository: mockserver/mockserver
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 1080 

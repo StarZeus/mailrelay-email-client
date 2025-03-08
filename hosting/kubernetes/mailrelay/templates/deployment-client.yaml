@@ -1,0 +1,72 @@
+{{- if .Values.mailrelay.server.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-smtp-client
+  labels:
+    {{- include "mailrelay.labels" . | nindent 4 }}
+    app.kubernetes.io/component: smtp-client
+spec:
+  replicas: {{ .Values.mailrelay.server.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "mailrelay.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: smtp-client
+  template:
+    metadata:
+      labels:
+        {{- include "mailrelay.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: smtp-client
+    spec:
+      {{- with .Values.global.scheduler.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.scheduler.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.scheduler.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.scheduler.name }}
+      schedulerName: {{ .Values.global.scheduler.name }}
+      {{- end }}
+      {{- with .Values.global.registry.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: smtp-client
+          image: {{ include "mailrelay.getImage" (dict "image" .Values.mailrelay.server.image "global" .Values.global.registry) }}
+          imagePullPolicy: {{ .Values.mailrelay.server.image.pullPolicy }}
+          ports:
+            - name: smtp
+              containerPort: {{ .Values.mailrelay.server.service.smtpPort }}
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: {{ .Values.mailrelay.server.config.nodeEnv }}
+            - name: APP_MODE
+              value: {{ .Values.mailrelay.server.config.appMode }}
+            - name: SMTP_SERVER_PORT
+              value: {{ .Values.mailrelay.server.config.smtpServerPort | quote }}
+            - name: KAFKA_BROKERS
+              value: {{ .Release.Name }}-kafka:9092
+          envFrom:
+            - secretRef:
+                name: {{ .Release.Name }}-secrets
+          resources:
+            {{- toYaml .Values.mailrelay.server.resources | nindent 12 }}
+          livenessProbe:
+            tcpSocket:
+              port: smtp
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: smtp
+            initialDelaySeconds: 5
+            periodSeconds: 5
+{{- end }} 
