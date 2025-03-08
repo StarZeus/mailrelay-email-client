@@ -1,19 +1,19 @@
-{{- if .Values.mailrelay.ingress.enabled -}}
+{{- if .Values.mailrelay.client.ingress.enabled -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ .Release.Name }}-app
+  name: {{ .Release.Name }}-smtp-client
   labels:
     {{- include "mailrelay.labels" . | nindent 4 }}
-  {{- with .Values.mailrelay.ingress.annotations }}
+  {{- with .Values.mailrelay.client.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  ingressClassName: {{ .Values.mailrelay.ingress.className }}
-  {{- if .Values.mailrelay.ingress.tls }}
+  ingressClassName: {{ .Values.mailrelay.client.ingress.className }}
+  {{- if .Values.mailrelay.client.ingress.tls }}
   tls:
-    {{- range .Values.mailrelay.ingress.tls }}
+    {{- range .Values.mailrelay.client.ingress.tls }}
     - hosts:
         {{- range .hosts }}
         - {{ . | quote }}
@@ -22,7 +22,7 @@ spec:
     {{- end }}
   {{- end }}
   rules:
-    {{- range .Values.mailrelay.ingress.hosts }}
+    {{- range .Values.mailrelay.client.ingress.hosts }}
     - host: {{ .host | quote }}
       http:
         paths:
@@ -31,9 +31,51 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ $.Release.Name }}-app
+                name: {{ $.Release.Name }}-smtp-client
                 port:
-                  name: http
+                  name: smtp
+          {{- end }}
+    {{- end }}  
+{{- end }} 
+
+---
+
+{{- if .Values.mailrelay.server.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-smtp-server
+  labels:
+    {{- include "mailrelay.labels" . | nindent 4 }}
+  {{- with .Values.mailrelay.server.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.mailrelay.server.ingress.className }}
+  {{- if .Values.mailrelay.server.ingress.tls }}
+  tls:
+    {{- range .Values.mailrelay.server.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.mailrelay.server.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ $.Release.Name }}-smtp-server
+                port:
+                  name: smtp
           {{- end }}
     {{- end }}
 {{- end }} 

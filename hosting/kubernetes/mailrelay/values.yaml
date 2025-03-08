@@ -76,6 +76,16 @@ mailrelay:
       type: ClusterIP
       smtpPort: 2525
 
+    ingress:
+      enabled: true
+      className: nginx
+      annotations: {}
+      hosts:
+        - host: smtp.local
+          paths:
+            - path: /
+              pathType: Prefix
+
     config:
       nodeEnv: production
       appMode: smtp-server

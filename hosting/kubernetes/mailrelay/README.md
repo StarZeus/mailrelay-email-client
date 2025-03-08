@@ -33,7 +33,6 @@ The following table lists the configurable parameters of the Mailrelay chart and
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `global.environment` | Global environment type | `production` |
 | `global.storageClass` | Global storage class for PVC | `standard` |
 
 ### Mailrelay Parameters

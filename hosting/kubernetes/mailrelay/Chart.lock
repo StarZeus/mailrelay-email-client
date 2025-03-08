@@ -1,0 +1,12 @@
+dependencies:
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 12.5.6
+- name: kafka
+  repository: https://charts.bitnami.com/bitnami
+  version: 22.1.5
+- name: mailhog
+  repository: https://codecentric.github.io/helm-charts
+  version: 5.0.0
+digest: sha256:1ff953409852a01a8eed613af71fe3363f365bf33e99160051f3ab8d27f0d5b4
+generated: "2025-03-08T08:35:53.301764-07:00"

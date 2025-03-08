@@ -5,13 +5,13 @@ metadata:
   labels:
     {{- include "mailrelay.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.mailrelay.service.type }}
+  type: {{ .Values.mailrelay.client.service.type }}
   ports:
-    - port: {{ .Values.mailrelay.service.uiPort }}
+    - port: {{ .Values.mailrelay.client.service.uiPort }}
       targetPort: http
       protocol: TCP
       name: http
-    - port: {{ .Values.mailrelay.service.smtpPort }}
+    - port: {{ .Values.mailrelay.client.service.smtpPort }}
       targetPort: smtp
       protocol: TCP
       name: smtp
