@@ -66,10 +66,10 @@ USER nextjs
 
 ENV PORT=3000
 ENV SMTP_SERVER_PORT=2525
-ENV APP_MODE=smtp-with-client-ui
+ENV APP_MODE=all
 
 EXPOSE ${PORT}
 EXPOSE ${SMTP_SERVER_PORT}
 
 # Run migrations and start server
-CMD npx drizzle-kit push:pg && npm run start 
+CMD npx drizzle-kit push --force && npm run start 

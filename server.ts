@@ -6,8 +6,8 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Get app mode from environment variable APP_MODE = smtp or smtp-client-ui or smtp-with-client-ui
-const mode = process.env.APP_MODE || 'smtp-with-client-ui';
+// Get app mode from environment variable APP_MODE = smtp or smtp-client or all
+const mode = process.env.APP_MODE || 'all';
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = parseInt(process.env.PORT || '3000', 10);
@@ -26,7 +26,8 @@ const smtpServer = new EmailServer({
 
 async function start() {
   try {
-    if (mode === 'smtp-client-ui' || mode === 'smtp-with-client-ui') {
+    console.log('Starting server in mode:', mode);
+    if (mode === 'smtp-client' || mode === 'all') {
       // Prepare Next.js
       await app.prepare();
 
@@ -49,7 +50,7 @@ async function start() {
       });
     }
 
-    if (mode === 'smtp' || mode === 'smtp-with-client-ui') {
+    if (mode === 'smtp-server' || mode === 'all') {
       // Start SMTP server
       await smtpServer.start();
     }
