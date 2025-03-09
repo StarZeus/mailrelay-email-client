@@ -33,7 +33,7 @@ export async function GET() {
     const actions = await db
       .select() 
       .from(filterActions)
-      .orderBy(filterActions.id);
+      .orderBy(filterActions.order);
 
     const rulesWithActions = rules.map(rule => {
       const actionsForRule = actions.filter(action => action.ruleId === rule.id);
@@ -140,6 +140,7 @@ export async function POST(request: Request) {
         validatedData.actions.map((action) => ({
           ruleId: rule.id,
           type: action.type,
+          order: action.order,
           config: action.config,
         }))
       );
@@ -206,6 +207,7 @@ async function insertOrUpdateActions(ruleId: number, actions: any[]) {
         .update(filterActions)
         .set({
           type: action.type,
+          order: action.order,
           config: action.config,
         })
         .where(and(eq(filterActions.id, action.id), eq(filterActions.ruleId, ruleId)));
@@ -215,6 +217,7 @@ async function insertOrUpdateActions(ruleId: number, actions: any[]) {
         .values({
           ruleId: ruleId,
           type: action.type,
+          order: action.order,
           config: action.config,
         });
     }

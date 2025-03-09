@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mjml2html from 'mjml';
-import Handlebars from '@/lib/handlebars-config';
+import { webLogger } from '@/lib/logger';
+import Handlebars from 'handlebars/dist/handlebars.min.js';
+import { HandlebarsOptions } from '@/types/common';
 
 interface HandlebarsOptions {
   fn: (context: any) => string;

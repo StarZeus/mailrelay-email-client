@@ -7,16 +7,9 @@ import micromatch from 'micromatch';
 import { logger, smtpLogger } from '../logger';
 import Handlebars from '../handlebars-config';
 import mjml2html from 'mjml';
-
-interface Email {
-  id: number;
-  fromEmail: string;
-  toEmail: string;
-  subject: string | null;
-  body: string | null;
-  sentDate: Date;
-  read: boolean;
-}
+import { Email } from '@/types/common';
+import { ActionPayload } from '@/types/common';
+import { validateActionConfig } from '../utils/validation';
 
 async function processEmailWithRules(email: Email, specificRuleId?: number) {
   const logger = smtpLogger.child({ emailId: email.id });
@@ -58,7 +51,8 @@ async function processEmailWithRules(email: Email, specificRuleId?: number) {
           const actions = await db
             .select()
             .from(filterActions)
-            .where(eq(filterActions.ruleId, rule.id));
+            .where(eq(filterActions.ruleId, rule.id))
+            .orderBy(filterActions.order);
 
           if (actions.length === 0) {
             logger.warn({ msg: 'No actions found for matched rule', ruleId: rule.id, ruleName: rule.name });
@@ -66,6 +60,7 @@ async function processEmailWithRules(email: Email, specificRuleId?: number) {
           }
 
           // Process each action
+          let currentPayload: ActionPayload = { email };
           for (const action of actions) {
             try {
               logger.debug({ 
@@ -76,9 +71,8 @@ async function processEmailWithRules(email: Email, specificRuleId?: number) {
                 ruleName: rule.name 
               });
 
-              await processAction(email, action);
+              currentPayload = await processAction(currentPayload, action);
               
-              // Record successful processing
               await db.insert(processedEmails).values({
                 emailId: email.id,
                 ruleId: rule.id,
@@ -225,100 +219,53 @@ async function matchesRule(email: Email, rule: typeof filterRules.$inferSelect) 
     : results.every((result: boolean) => result);
 }
 
-async function processAction(email: Email, action: typeof filterActions.$inferSelect) {
+async function processAction(payload: ActionPayload, action: typeof filterActions.$inferSelect): Promise<ActionPayload> {
   const config = action.config as Record<string, any>;
   const maxRetries = 1;
   let lastError: Error | null = null;
 
-  // Validate action config
   validateActionConfig(action.type, config);
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
+      let result: ActionPayload;
+      
       switch (action.type) {
         case 'forward':
-          await forwardEmail(email, config.forwardTo);
+          result = await forwardEmail(payload, config.forwardTo);
           break;
         case 'webhook':
-          await callWebhook(email, config.url, config.method || 'POST', attempt);
+          result = await callWebhook(payload, config.url, config.method || 'POST', attempt);
           break;
         case 'kafka':
-          await sendToKafka(email, config.topic, config.brokers);
+          result = await sendToKafka(payload, config.topic, config.brokers);
           break;
         case 'javascript':
-          await runJavaScript(email, config.code);
+          result = await runJavaScript(payload, config.code);
           break;
         case 'email-relay':
-          await processEmailRelay(email, config);
+          result = await processEmailRelay(payload, config);
           break;
         default:
           throw new Error(`Unknown action type: ${action.type}`);
       }
-      // If successful, break the retry loop
-      return;
+      return result;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       if (attempt === maxRetries) {
         throw new Error(`Action failed after ${maxRetries} attempts: ${lastError.message}`);
       }
-      // Wait before retrying (exponential backoff)
       await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
     }
   }
+  throw lastError;
 }
 
-function validateActionConfig(type: string, config: Record<string, any>) {
-  switch (type) {
-    case 'forward':
-      if (!config.forwardTo || typeof config.forwardTo !== 'string') {
-        throw new Error('Forward action requires valid forwardTo email address');
-      }
-      break;
-    case 'webhook':
-      if (!config.url || typeof config.url !== 'string') {
-        throw new Error('Webhook action requires valid URL');
-      }
-      if (config.method && !['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(config.method)) {
-        throw new Error('Invalid webhook method');
-      }
-      break;
-    case 'kafka':
-      if (!config.topic || typeof config.topic !== 'string') {
-        throw new Error('Kafka action requires valid topic');
-      }
-      if (!Array.isArray(config.brokers) || !config.brokers.length) {
-        throw new Error('Kafka action requires valid brokers array');
-      }
-      break;
-    case 'javascript':
-      if (!config.code || typeof config.code !== 'string') {
-        throw new Error('JavaScript action requires valid code');
-      }
-      break;
-    case 'email-relay':
-      if (config.templateType === 'mjml') {
-        if (!config.mjmlTemplate || typeof config.mjmlTemplate !== 'string') {
-          throw new Error('Email relay action requires valid MJML template');
-        }
-      } else {
-        if (!config.htmlTemplate || typeof config.htmlTemplate !== 'string') {
-          throw new Error('Email relay action requires valid HTML template');
-        }
-      }
-      if (!config.recipientExpression || typeof config.recipientExpression !== 'string') {
-        throw new Error('Email relay action requires valid recipient expression');
-      }
-      break;
-  }
-}
-
-async function forwardEmail(email: Email, forwardTo: string) {
-  // Get attachments for this email
-  try {
-    const emailAttachments = await db
-      .select()
-      .from(attachments)
-    .where(eq(attachments.emailId, email.id));
+async function forwardEmail(payload: ActionPayload, forwardTo: string): Promise<ActionPayload> {
+  const emailAttachments = await db
+    .select()
+    .from(attachments)
+    .where(eq(attachments.emailId, payload.email.id));
 
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
@@ -326,30 +273,29 @@ async function forwardEmail(email: Email, forwardTo: string) {
     secure: process.env.SMTP_SECURE === 'true'
   });
 
-  await transporter.sendMail({
+  const result = await transporter.sendMail({
     from: process.env.SMTP_FROM,
     to: forwardTo,
-    subject: email.subject || '',
-    text: email.body || '',
+    subject: payload.email.subject || '',
+    text: payload.email.body || '',
     attachments: emailAttachments.map(att => ({
       filename: att.filename,
       content: Buffer.from(att.content, 'hex'),
       contentType: att.contentType,
     })),
   });
-  } catch (error) {
-    logger.error({
-      msg: 'Error forwarding email',
-      error,
-    });
-  }
+
+  return {
+    ...payload,
+    chainData: result
+  };
 }
 
-async function callWebhook(email: Email, url: string, method: string, attempt: number) {
+async function callWebhook(payload: ActionPayload, url: string, method: string, attempt: number): Promise<ActionPayload> {
   const emailAttachments = await db
     .select()
     .from(attachments)
-    .where(eq(attachments.emailId, email.id));
+    .where(eq(attachments.emailId, payload.email.id));
 
   const response = await fetch(url, {
     method,
@@ -358,12 +304,7 @@ async function callWebhook(email: Email, url: string, method: string, attempt: n
       'X-Retry-Attempt': attempt.toString(),
     },
     body: JSON.stringify({
-      id: email.id,
-      fromEmail: email.fromEmail,
-      toEmail: email.toEmail,
-      subject: email.subject,
-      body: email.body,
-      sentDate: email.sentDate,
+      ...payload,
       attachments: emailAttachments.map(att => ({
         filename: att.filename,
         contentType: att.contentType,
@@ -375,9 +316,15 @@ async function callWebhook(email: Email, url: string, method: string, attempt: n
   if (!response.ok) {
     throw new Error(`Webhook failed with status ${response.status}: ${await response.text()}`);
   }
+
+  const responseData = await response.json();
+  return {
+    ...payload,
+    chainData: responseData
+  };
 }
 
-async function sendToKafka(email: Email, topic: string, brokers: string[]) {
+async function sendToKafka(payload: ActionPayload, topic: string, brokers: string[]): Promise<ActionPayload> {
   logger.info({ msg: 'Sending email to Kafka YYYYY', topic, brokers });
 
   const kafka = new Kafka({
@@ -396,19 +343,14 @@ async function sendToKafka(email: Email, topic: string, brokers: string[]) {
     const emailAttachments = await db
       .select()
       .from(attachments)
-      .where(eq(attachments.emailId, email.id));
+      .where(eq(attachments.emailId, payload.email.id));
 
     await producer.send({
       topic,
       messages: [{
-        key: email.id.toString(),
+        key: payload.email.id.toString(),
         value: JSON.stringify({
-          id: email.id,
-          fromEmail: email.fromEmail,
-          toEmail: email.toEmail,
-          subject: email.subject,
-          body: email.body,
-          sentDate: email.sentDate,
+          ...payload,
           attachments: emailAttachments.map(att => ({
             filename: att.filename,
             contentType: att.contentType,
@@ -420,68 +362,55 @@ async function sendToKafka(email: Email, topic: string, brokers: string[]) {
   } finally {
     await producer.disconnect();
   }
+
+  return payload;
 }
 
-async function runJavaScript(email: Email, code: string) {
-  try {
-    // Create a safe context with email data and allowed functions
-    const context = {
-      email: {
-        id: email.id,
-        fromEmail: email.fromEmail,
-        toEmail: email.toEmail,
-        subject: email.subject,
-        body: email.body,
-        sentDate: email.sentDate,
-      },
-      console: {
-        log: console.log,
-        error: console.error,
-      },
-      fetch: fetch,
-      setTimeout: setTimeout,
-      clearTimeout: clearTimeout,
-      Promise: Promise
-    };
+async function runJavaScript(payload: ActionPayload, code: string): Promise<ActionPayload> {
+  const context = {
+    payload,
+    console: {
+      log: console.log,
+      error: console.error,
+    },
+    fetch: fetch,
+    setTimeout: setTimeout,
+    clearTimeout: clearTimeout,
+    Promise: Promise
+  };
 
-    // Create async function using Function constructor
-    const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-    
-    // Wrap the code in an async IIFE
-    const wrappedCode = `
-      return (async () => {
-        try {
-          with (context) {
-            ${code}
-          }
-          return true;
-        } catch (error) {
-          console.error('Script error:', error);
-          throw error;
+  const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+  
+  const wrappedCode = `
+    return (async () => {
+      try {
+        with (context) {
+          ${code}
+          return payload;
         }
-      })();
-    `;
+      } catch (error) {
+        console.error('Script error:', error);
+        throw error;
+      }
+    })();
+  `;
 
-    const fn = new AsyncFunction('context', wrappedCode);
+  const fn = new AsyncFunction('context', wrappedCode);
 
-    // Execute with timeout protection
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('JavaScript execution timed out')), 5000);
-    });
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('JavaScript execution timed out')), 5000);
+  });
 
-    const result = await Promise.race([
-      fn(context),
-      timeoutPromise
-    ]);
+  const result = await Promise.race([
+    fn(context),
+    timeoutPromise
+  ]);
 
-    if (result === false) {
-      throw new Error('JavaScript action returned false');
-    }
-    return result;
-  } catch (error) {
-    console.error('JavaScript execution error:', error);
-    throw error;
+  if (!result || typeof result !== 'object') {
+    throw new Error('JavaScript action must return the payload object');
   }
+  
+  return result;
 }
 
 function emailAndName(inputEmail: string): { name: string | null; email: string } {
@@ -518,18 +447,19 @@ function emailAndName(inputEmail: string): { name: string | null; email: string 
   };
 }
 
-async function processEmailRelay(email: Email, config: Record<string, any>) {
+async function processEmailRelay(payload: ActionPayload, config: Record<string, any>): Promise<ActionPayload> {
   try {
     // Prepare email data for template
     const emailData = {
       email: {
-        id: email.id,
-        fromEmail: emailAndName(email.fromEmail).email,
-        toEmail: emailAndName(email.toEmail).email,
-        subject: email.subject,
-        body: email.body,
-        sentDate: email.sentDate
-      }
+        id: payload.email.id,
+        fromEmail: emailAndName(payload.email.fromEmail).email,
+        toEmail: emailAndName(payload.email.toEmail).email,
+        subject: payload.email.subject,
+        body: payload.email.body,
+        sentDate: payload.email.sentDate
+      },
+      chainData: payload.chainData
     };
 
     // Render template based on type
@@ -579,7 +509,7 @@ async function processEmailRelay(email: Email, config: Record<string, any>) {
     // Extract recipients using the expression
     let recipients: string[];
     if (config.recipientExpression === 'email.toEmail') {
-      recipients = [email.toEmail];
+      recipients = [payload.email.toEmail];
     } else {
       try {
         // Handle Handlebars-style expressions
@@ -632,7 +562,7 @@ async function processEmailRelay(email: Email, config: Record<string, any>) {
     const emailAttachments = await db
       .select()
       .from(attachments)
-      .where(eq(attachments.emailId, email.id));
+      .where(eq(attachments.emailId, payload.email.id));
 
     // Create transporter
     const transporter = nodemailer.createTransport({
@@ -646,7 +576,7 @@ async function processEmailRelay(email: Email, config: Record<string, any>) {
       await transporter.sendMail({
         from: process.env.SMTP_FROM,
         to: recipient,
-        subject: email.subject || '',
+        subject: payload.email.subject || '',
         html: html,
         attachments: emailAttachments.map(att => ({
           filename: att.filename,
@@ -655,11 +585,16 @@ async function processEmailRelay(email: Email, config: Record<string, any>) {
         })),
       });
     }
+
+    return {
+      ...payload,
+      chainData: html
+    };
   } catch (error) {
     logger.error({
       msg: 'Error in email relay action',
       error,
-      emailId: email.id,
+      emailId: payload.email.id,
     });
     throw error;
   }

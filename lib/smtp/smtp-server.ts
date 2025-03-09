@@ -4,13 +4,7 @@ import { db } from '../db';
 import { emails, attachments } from '../db/schema';
 import { processEmailWithRules } from './rules-processor';
 import { smtpLogger } from '../logger';
-
-interface SMTPServerConfig {
-  port: number;
-  host?: string;
-  secure?: boolean;
-  authOptional?: boolean;
-}
+import { SMTPServerConfig } from '@/types/common';
 
 export class EmailServer {
   private server: SMTPServer;

@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { JSONTree } from 'react-json-tree';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/string';
 
 interface JsonTreeViewProps {
   data: any;

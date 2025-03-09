@@ -3,140 +3,9 @@ import { emails, processedEmails } from '@/lib/db/schema';
 import { desc, eq, like, sql, inArray, isNull } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { webLogger } from '@/lib/logger';
-import { parse } from 'node-html-parser';
+import { htmlToJson } from '@/lib/utils/html';
 
 const PAGE_SIZE = 20;
-
-function htmlToJson(html: string) {
-  try {
-    const root = parse(html);
-    const result: Record<string, any> = {};
-
-    // Process form elements
-    root.querySelectorAll('form').forEach((form, index) => {
-      const formData: Record<string, any> = {
-        id: form.getAttribute('id') || `form_${index}`,
-        action: form.getAttribute('action'),
-        method: form.getAttribute('method'),
-        fields: {}
-      };
-
-      form.querySelectorAll('input, select, textarea').forEach(field => {
-        const name = field.getAttribute('name') || field.getAttribute('id');
-        if (name) {
-          formData.fields[name] = {
-            type: field.getAttribute('type') || field.tagName.toLowerCase(),
-            value: field.getAttribute('value') || '',
-            required: field.hasAttribute('required'),
-            placeholder: field.getAttribute('placeholder')
-          };
-        }
-      });
-
-      result[formData.id] = formData;
-    });
-
-    // Process tables
-    root.querySelectorAll('table').forEach((table, index) => {
-      const tableData: Record<string, any> = {
-        id: table.getAttribute('id') || `table_${index}`,
-        headers: [],
-        data: []
-      };
-
-      // Get headers first
-      const headers: string[] = [];
-      table.querySelectorAll('th').forEach(th => {
-        const header = th.text.trim();
-        headers.push(header);
-        tableData.headers.push(header);
-      });
-
-      // If no headers found, try using first row as headers
-      if (headers.length === 0) {
-        const firstRow = table.querySelector('tr');
-        if (firstRow) {
-          firstRow.querySelectorAll('td').forEach(td => {
-            const header = td.text.trim();
-            headers.push(header);
-            tableData.headers.push(header);
-          });
-        }
-      }
-
-      // Process rows into objects
-      table.querySelectorAll('tr').forEach((tr, rowIndex) => {
-        // Skip first row if we used it for headers
-        if (headers.length === 0 || rowIndex > 0) {
-          const cells = tr.querySelectorAll('td');
-          if (cells.length > 0) {
-            const rowData: Record<string, string> = {};
-            cells.forEach((td, cellIndex) => {
-              // Use header if available, otherwise use column_N
-              const key = headers[cellIndex] || `column_${cellIndex + 1}`;
-              rowData[key] = td.text.trim();
-            });
-            tableData.data.push(rowData);
-          }
-        }
-      });
-
-      result[tableData.id] = tableData;
-    });
-
-    // Process lists
-    root.querySelectorAll('ul, ol').forEach((list, index) => {
-      const listData: string[] = [];
-      list.querySelectorAll('li').forEach(item => {
-        listData.push(item.text.trim());
-      });
-      result[`list_${index}`] = listData;
-    });
-
-    // Process divs with IDs or classes
-    root.querySelectorAll('div[id], div[class]').forEach(div => {
-      const id = div.getAttribute('id') || div.getAttribute('class')?.replace(/\s+/g, '_');
-      if (id) {
-        result[id] = {
-          text: div.text.trim(),
-          html: div.innerHTML.trim()
-        };
-      }
-    });
-
-    // Process headings
-    root.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach((heading, index) => {
-      const level = heading.tagName.toLowerCase();
-      const id = heading.getAttribute('id') || `${level}_${index}`;
-      result[id] = heading.text.trim();
-    });
-
-    // Process links
-    root.querySelectorAll('a').forEach((link, index) => {
-      const id = link.getAttribute('id') || `link_${index}`;
-      result[id] = {
-        text: link.text.trim(),
-        href: link.getAttribute('href'),
-        title: link.getAttribute('title')
-      };
-    });
-
-    // Process images
-    root.querySelectorAll('img').forEach((img, index) => {
-      const id = img.getAttribute('id') || `image_${index}`;
-      result[id] = {
-        src: img.getAttribute('src'),
-        alt: img.getAttribute('alt'),
-        title: img.getAttribute('title')
-      };
-    });
-
-    return result;
-  } catch (error) {
-    console.error('Error parsing HTML:', error);
-    return null;
-  }
-}
 
 export async function GET(request: Request) {
   const logger = webLogger.child({ route: '/api/emails' });
@@ -203,7 +72,7 @@ export async function GET(request: Request) {
     const results = await baseQuery;
     
     // Process results to convert HTML body to JSON when possible
-    const processedResults = results.map(email => {
+    const mappedArray = results.map(email => {
       // Check if content appears to be HTML
       const isHtml = email.body?.toLowerCase().includes('<!doctype html') || 
                     email.body?.toLowerCase().includes('<html') ||
@@ -225,7 +94,7 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.json({
-      emails: processedResults.slice(0, PAGE_SIZE),
+      emails: mappedArray.slice(0, PAGE_SIZE),
       nextCursor: results.length > PAGE_SIZE ? results[PAGE_SIZE - 1].id : null
     });
   } catch (error) {

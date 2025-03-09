@@ -1,0 +1,1 @@
+ALTER TABLE "filter_actions" ADD COLUMN "order" integer DEFAULT 0 NOT NULL;

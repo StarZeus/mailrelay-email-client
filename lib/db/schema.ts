@@ -107,6 +107,7 @@ export const filterActions = pgTable('filter_actions', {
   ruleId: serial('rule_id').references(() => filterRules.id),
   type: varchar('type', { length: 50 }).notNull(),
   config: jsonb('config').notNull().default({}),
+  order: integer('order').notNull().default(0),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
