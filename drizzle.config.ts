@@ -12,5 +12,4 @@ export default {
   },
   strict: true,
   verbose: true,
-  push: true,
 } satisfies Config;
