@@ -8,7 +8,7 @@ import { ClientWrapper } from '@/app/components/client-wrapper';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { RefreshCw, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
-import { parseSender } from '@/app/components/EmailList';
+import { parseEmail } from '@/lib/utils/string';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -184,7 +184,7 @@ function ProcessedEmailList() {
                   {expandedRules.has(ruleName) && (
                     <div className="divide-y divide-gray-200" data-testid="processed-emails">
                       {emails.map((email) => {
-                        const { name, email: parsedEmail } = parseSender(email.email.fromEmail);
+                        const { name, email: parsedEmail } = parseEmail(email.email.fromEmail);
                         const formattedDate = format(new Date(email.processedAt), 'MMM dd, h:mm a');
                         
                         return (

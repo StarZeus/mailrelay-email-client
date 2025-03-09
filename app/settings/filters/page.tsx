@@ -11,7 +11,7 @@ import { TrashIcon, Loader2, Maximize2 } from 'lucide-react';
 import { useFilters } from '@/hooks/useFilters';
 import { cn } from '@/lib/utils/string';
 import { useSearchParams } from 'next/navigation';
-import { parseSender } from '@/app/components/EmailList';
+import { parseEmail } from '@/lib/utils/string';
 import { EmailComposerDialog } from '@/app/components/EmailComposerDialog';
 import { CodeEditor } from '@/app/components/CodeEditor';
 import { useSortable } from '@dnd-kit/sortable';
@@ -581,8 +581,8 @@ export default function FiltersPage() {
       setSelectedRule({
         id: 0,
         name: email.subject,
-        fromPattern: parseSender(email.fromEmail).email,
-        toPattern: parseSender(email.toEmail).email,
+        fromPattern: parseEmail(email.fromEmail).email,
+        toPattern: parseEmail(email.toEmail).email,
         subjectPattern: email.subject,
         enabled: true,
         operator: 'AND',

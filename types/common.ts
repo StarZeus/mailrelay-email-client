@@ -5,6 +5,7 @@ export interface Email {
   subject: string | null;
   body: string | null;
   bodyJson: Record<string, any> | null;
+  isHtml: boolean;
   sentDate: Date;
   attachments?: any[];
 }

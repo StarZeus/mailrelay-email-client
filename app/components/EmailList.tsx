@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { RefreshCw, Trash2, Filter, InboxIcon, FileSliders, CopyPlus } from 'lucide-react';
 import { clientLogger } from '@/lib/logger';
 import DOMPurify from 'isomorphic-dompurify';
+import { parseEmail } from '@/lib/utils/string';
 
 interface Email {
   id: number;
@@ -23,40 +24,6 @@ interface Email {
   sentDate: string;
   read: boolean;
   isHtml?: boolean;
-}
-
-export function parseSender(fromEmail: string): { name: string | null; email: string } {
-  // Handle formats like:
-  // "Name" <email@domain.com>
-  // Name <email@domain.com>
-  // <email@domain.com>
-  // email@domain.com
-  
-  // First try to match the format with angle brackets
-  const angleMatch = fromEmail.match(/^(?:"([^"]+)"|([^<]+?))?(?:\s*<([^>]+)>)$/);
-  if (angleMatch) {
-    const [, quotedName, unquotedName, email] = angleMatch;
-    const name = quotedName || (unquotedName ? unquotedName.trim() : null);
-    return {
-      name: name,
-      email: email.trim()
-    };
-  }
-  
-  // If no angle brackets, check if it's a valid email address
-  const emailMatch = fromEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
-  if (emailMatch) {
-    return {
-      name: null,
-      email: fromEmail.trim()
-    };
-  }
-  
-  // If nothing matches, return the input as email
-  return {
-    name: null,
-    email: fromEmail
-  };
 }
 
 export const EmailList = () => {
@@ -277,7 +244,7 @@ export const EmailList = () => {
           ) : (
             <div className="divide-y divide-gray-200">
               {emails.map((email, i) => {
-                const { name, email: parsedEmail } = parseSender(email.fromEmail);
+                const { name, email: parsedEmail } = parseEmail(email.fromEmail);
                 const formattedDate = email.sentDate ? format(new Date(email.sentDate), 'MMM dd, h:mm a') : '';
                 
                 return (

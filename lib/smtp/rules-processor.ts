@@ -10,6 +10,8 @@ import mjml2html from 'mjml';
 import { Email } from '@/types/common';
 import { ActionPayload } from '@/types/common';
 import { validateActionConfig } from '../utils/validation';
+import { htmlToJson } from '../utils/html';
+import { parseEmail } from '../utils/string';
 
 async function processEmailWithRules(email: Email, specificRuleId?: number) {
   const logger = smtpLogger.child({ emailId: email.id });
@@ -229,6 +231,7 @@ async function processAction(payload: ActionPayload, action: typeof filterAction
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       let result: ActionPayload;
+      result = { ...payload, email: { ...payload.email, bodyJson: htmlToJson(payload.email.body || ''), isHtml: payload.email.isHtml || false } };
       
       switch (action.type) {
         case 'forward':
@@ -366,9 +369,9 @@ async function sendToKafka(payload: ActionPayload, topic: string, brokers: strin
   return payload;
 }
 
-async function runJavaScript(payload: ActionPayload, code: string): Promise<ActionPayload> {
+async function runJavaScript(input: ActionPayload, code: string): Promise<ActionPayload> {
   const context = {
-    payload,
+    input,
     console: {
       log: console.log,
       error: console.error,
@@ -386,7 +389,7 @@ async function runJavaScript(payload: ActionPayload, code: string): Promise<Acti
       try {
         with (context) {
           ${code}
-          return payload;
+          return input;
         }
       } catch (error) {
         console.error('Script error:', error);
@@ -413,50 +416,18 @@ async function runJavaScript(payload: ActionPayload, code: string): Promise<Acti
   return result;
 }
 
-function emailAndName(inputEmail: string): { name: string | null; email: string } {
-  // Handle formats like:
-  // "Name" <email@domain.com>
-  // Name <email@domain.com>
-  // <email@domain.com>
-  // email@domain.com
-  
-  // First try to match the format with angle brackets
-  const angleMatch = inputEmail.match(/^(?:"([^"]+)"|([^<]+?))?(?:\s*<([^>]+)>)$/);
-  if (angleMatch) {
-    const [, quotedName, unquotedName, email] = angleMatch;
-    const name = quotedName || (unquotedName ? unquotedName.trim() : null);
-    return {
-      name: name,
-      email: email.trim()
-    };
-  }
-  
-  // If no angle brackets, check if it's a valid email address
-  const emailMatch = inputEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
-  if (emailMatch) {
-    return {
-      name: null,
-      email: inputEmail.trim()
-    };
-  }
-  
-  // If nothing matches, return the input as email
-  return {
-    name: null,
-    email: inputEmail
-  };
-}
-
 async function processEmailRelay(payload: ActionPayload, config: Record<string, any>): Promise<ActionPayload> {
   try {
     // Prepare email data for template
     const emailData = {
       email: {
         id: payload.email.id,
-        fromEmail: emailAndName(payload.email.fromEmail).email,
-        toEmail: emailAndName(payload.email.toEmail).email,
+        fromEmail: parseEmail(payload.email.fromEmail).email,
+        toEmail: parseEmail(payload.email.toEmail).email,
         subject: payload.email.subject,
         body: payload.email.body,
+        bodyJson: payload.email.bodyJson,
+        isHtml: payload.email.isHtml,
         sentDate: payload.email.sentDate
       },
       chainData: payload.chainData

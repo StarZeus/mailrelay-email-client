@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { EmailList, parseSender } from './EmailList';
+import { EmailList } from './EmailList';
+import { parseEmail } from '@/lib/utils/string';
 
 // Mock fetch
 global.fetch = jest.fn(() => 
@@ -115,7 +116,7 @@ describe('EmailList Component', () => {
   });
 });
 
-describe('parseSender function', () => {
+describe('parseEmail function', () => {
   const testCases = [
     {
       input: '"John Doe" <john@example.com>',
@@ -161,7 +162,7 @@ describe('parseSender function', () => {
 
   testCases.forEach(({ input, expected }) => {
     it(`correctly parses "${input}"`, () => {
-      const result = parseSender(input);
+      const result = parseEmail(input);
       expect(result).toEqual(expected);
     });
   });
@@ -176,7 +177,7 @@ describe('parseSender function', () => {
     ];
 
     invalidInputs.forEach(input => {
-      const result = parseSender(input);
+      const result = parseEmail(input);
       expect(result).toEqual({ name: null, email: input });
     });
   });
