@@ -13,9 +13,10 @@ import { validateActionConfig } from '../utils/validation';
 import { htmlToJson } from '../utils/html';
 import { parseEmail } from '../utils/string';
 
-async function processEmailWithRules(email: Email, specificRuleId?: number) {
+async function processEmailWithRules(email: Email, specificRuleId?: number, isTest?: boolean) {
   const logger = smtpLogger.child({ emailId: email.id });
   logger.info('Starting rule processing for email');
+  let currentPayload: ActionPayload = { email };
 
   try {
     // Get rules - either all enabled rules or just the specific rule
@@ -62,7 +63,6 @@ async function processEmailWithRules(email: Email, specificRuleId?: number) {
           }
 
           // Process each action
-          let currentPayload: ActionPayload = { email };
           for (const action of actions) {
             try {
               logger.debug({ 
@@ -75,13 +75,15 @@ async function processEmailWithRules(email: Email, specificRuleId?: number) {
 
               currentPayload = await processAction(currentPayload, action);
               
+              if (!isTest) {
               await db.insert(processedEmails).values({
-                emailId: email.id,
-                ruleId: rule.id,
-                actionId: action.id,
-                status: 'success',
-                processedAt: new Date(),
-              });
+                  emailId: email.id,
+                  ruleId: rule.id,
+                  actionId: action.id,
+                  status: 'success',
+                  processedAt: new Date(),
+                });
+              }
 
               logger.info({ 
                 msg: 'Action processed successfully', 
@@ -107,15 +109,17 @@ async function processEmailWithRules(email: Email, specificRuleId?: number) {
                 stack: error instanceof Error ? error.stack : undefined
               });
 
+              if (!isTest) {
               // Record failed processing with detailed error
               await db.insert(processedEmails).values({
                 emailId: email.id,
                 ruleId: rule.id,
-                actionId: action.id,
-                status: 'failed',
-                error: detailedError,
-                processedAt: new Date(),
-              });
+                  actionId: action.id,
+                  status: 'failed',
+                  error: detailedError,
+                  processedAt: new Date(),
+                });
+              }
             }
           }
         } else {
@@ -143,14 +147,16 @@ async function processEmailWithRules(email: Email, specificRuleId?: number) {
           stack: error instanceof Error ? error.stack : undefined
         });
 
+        if (!isTest) {
         // Record rule processing failure
         await db.insert(processedEmails).values({
           emailId: email.id,
           ruleId: rule.id,
           status: 'failed',
-          error: `Rule processing failed: ${errorMessage}`,
-          processedAt: new Date(),
-        });
+            error: `Rule processing failed: ${errorMessage}`,
+            processedAt: new Date(),
+          });
+        }
       }
     }
     
@@ -160,7 +166,7 @@ async function processEmailWithRules(email: Email, specificRuleId?: number) {
       matchedRules: matchedRules.map(r => ({ id: r.id, name: r.name }))
     });
 
-    return matchedRules;
+    return currentPayload;
   } catch (error) {
     const errorMessage = error instanceof Error 
       ? error.message 

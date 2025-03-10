@@ -81,7 +81,7 @@ export class EmailServer {
         body: emailRecord[0].body,
         sentDate: emailRecord[0].sentDate || new Date(),
         read: emailRecord[0].read || false
-      });
+      }, null, false);
       
 
       sessionLogger.info({

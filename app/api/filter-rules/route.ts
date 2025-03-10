@@ -101,7 +101,7 @@ export async function POST(request: Request) {
             ...email,
             sentDate: email.sentDate instanceof Date ? email.sentDate : new Date(email.sentDate || Date.now()),
             read: email.read === null ? false : email.read,
-          }, ruleId);
+          }, ruleId, true);
           // Only increment count if the rule actually matched and processed the email
           if (matchedRules.length > 0) {
             processedCount++;
