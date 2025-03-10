@@ -1,7 +1,8 @@
+import { parse } from 'node-html-parser';
+
 export function htmlToJson(html: string) {
   try {
-    const root = document.createElement('div');
-    root.innerHTML = html;
+    const root = parse(html);
     const result: Record<string, any> = {};
 
     // Process tables

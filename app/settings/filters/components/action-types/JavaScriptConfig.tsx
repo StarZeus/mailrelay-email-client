@@ -17,42 +17,55 @@ export const JavaScriptConfig = ({ action, isEditing, onChange }: JavaScriptConf
             <div>
               <div className="font-semibold mb-2">Available Variables:</div>
               <pre className="text-xs bg-gray-50 p-2 rounded">
-{`email: {
-  id: number            // Unique ID of the email
-  fromEmail: string     // Sender's email address
-  toEmail: string       // Recipient's email address
-  subject: string|null  // Email subject line
-  body: string|null     // Email body content
-  bodyJson: object|null // Email body content as JSON
-  sentDate: Date        // When email was sent
+              {`
+Input Object:
+{
+  email: {
+    id: number            // Unique ID of the email
+    fromEmail: string     // Sender's email address
+    toEmail: string       // Recipient's email address
+    subject: string|null  // Email subject line
+    body: string|null     // Email body content
+    bodyJson: object|null // Email body content as JSON
+    isHtml: boolean       // Whether the email is HTML
+    sentDate: Date        // When email was sent
+    attachments: {
+      filename: string
+      content: string
+      contentType: string
+    }[]
+  },
+  chainData: any // Chain data from previous actions
 }`}
-              </pre>
-            </div>
-            <div>
-              <div className="font-semibold mb-2">Available Functions:</div>
-              <pre className="text-xs bg-gray-50 p-2 rounded">
+                      </pre>
+                    </div>
+                    <div>
+                      <div className="font-semibold mb-2">Available Functions:</div>
+                      <pre className="text-xs bg-gray-50 p-2 rounded">
 {`console.log()    // Log info messages
 console.error()  // Log error messages
 fetch()         // Make HTTP requests
 setTimeout()    // Delay execution
 clearTimeout()  // Clear a timeout
 Promise         // Work with promises`}
-              </pre>
-            </div>
-            <div>
-              <div className="font-semibold mb-2">Example:</div>
-              <pre className="text-xs bg-gray-50 p-2 rounded">
+                      </pre>
+                    </div>
+                    <div>
+                      <div className="font-semibold mb-2">Example:</div>
+                      <pre className="text-xs bg-gray-50 p-2 rounded">
 {`// Send email data to external API
-await fetch('https://api.example.com', {
+const response = await fetch('https://api.example.com', {
   method: 'POST',
-  body: JSON.stringify({ emailId: email.id })
+  body: JSON.stringify({ emailId: input.email.id })
 });
 
 // Process email content
-if (email.subject.includes('urgent')) {
+if (input.email.subject.includes('urgent')) {
   console.log('Processing urgent email');
   // Your urgent handling logic
-}`}
+}
+return response;  // This will be sent to the next action as chainData
+`}
               </pre>
             </div>
           </div>

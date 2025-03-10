@@ -384,12 +384,14 @@ async function runJavaScript(input: ActionPayload, code: string): Promise<Action
 
   const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
   
+  // Check if code has return statement
+  const hasReturnStatement = /\breturn\b/.test(code);
+  
   const wrappedCode = `
     return (async () => {
       try {
         with (context) {
-          ${code}
-          return input;
+          ${hasReturnStatement ? code : `${code}; return input;`}
         }
       } catch (error) {
         console.error('Script error:', error);
@@ -404,14 +406,19 @@ async function runJavaScript(input: ActionPayload, code: string): Promise<Action
     setTimeout(() => reject(new Error('JavaScript execution timed out')), 5000);
   });
 
-  const result = await Promise.race([
+  let result = await Promise.race([
     fn(context),
     timeoutPromise
   ]);
 
-  if (!result || typeof result !== 'object') {
-    throw new Error('JavaScript action must return the payload object');
+  if (typeof result !== 'object') {
+    result = {
+      ...input,
+      chainData: result
+    };
   }
+
+  logger.debug({ msg: 'JavaScript action completed for email', result: result.chainData });
   
   return result;
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { Toaster as SonnerToaster } from 'sonner';
 import { Toaster } from '@/components/ui/toaster';
 import { NavMenu } from '@/app/components/menu';
 import { Header } from '@/app/components/header';
@@ -40,6 +41,7 @@ export default async function RootLayout({
                 </main>
             </div>
             <Toaster />
+            <SonnerToaster position="bottom-left" />
           </AuthProvider>
       </body>
     </html>

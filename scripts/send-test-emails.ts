@@ -10,9 +10,9 @@ const testEmails = [
   {
     from: 'sender@hotmail.com',
     to: 'subscribers@company.com',
-    subject: 'Weekly email',
-    text: `<h1>Weekly System Updates</h1>
-        <p>Here are the key updates from this week:</p>
+    subject: 'Monthly System Updates',
+    text: `<h1>Monthly System Updates</h1>
+        <p>Here are the key updates from this month:</p>
         
         <h2>New Features</h2>
         <ul>
