@@ -3,15 +3,12 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster as SonnerToaster } from 'sonner';
 import { Toaster } from '@/components/ui/toaster';
-import { NavMenu } from '@/app/components/menu';
 import { Header } from '@/app/components/header';
-import { Sidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from './components/nav-sidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { getServerSession } from "next-auth";
-import { authOptions } from "./api/auth/[...nextauth]/route";
 import { AuthProvider } from './components/providers/session-provider';
 import { Suspense } from 'react';
+
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {

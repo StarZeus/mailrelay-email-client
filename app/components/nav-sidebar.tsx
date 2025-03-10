@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils/string';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Calendar, FileStack, Home, Inbox, Search, Settings, Mail, MailCheck, LogOut, User } from "lucide-react"
+import { Calendar, FileStack, Home, Inbox, Settings, Mail,MailCheck, LogOut, User } from "lucide-react"
 import { useSession, signOut } from "next-auth/react";
 
 import {

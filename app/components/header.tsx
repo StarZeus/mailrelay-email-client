@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, Mail } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, Suspense } from 'react';
