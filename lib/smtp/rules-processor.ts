@@ -11,7 +11,7 @@ import { ActionPayload } from '@/types/common';
 import { validateActionConfig } from '../utils/validation';
 import { htmlToJson } from '../utils/html';
 import { parseEmail } from '../utils/string';
-import { Handlebars, compileHTML } from '@/lib/handlebars-config';
+import { Handlebars, compileHTML } from '../handlebars-config';
 
 async function processEmailWithRules(email: Email, specificRuleId: number, isTest?: boolean) {
   const logger = smtpLogger.child({ emailId: email.id });
