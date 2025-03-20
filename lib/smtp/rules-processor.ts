@@ -286,7 +286,7 @@ async function forwardEmail(payload: ActionPayload, forwardTo: string): Promise<
     from: process.env.SMTP_FROM,
     to: forwardTo,
     subject: payload.email.subject || '',
-    text: payload.email.body || '',
+    ...(payload.email.isHtml ? { html: payload.email.body || '' } : { text: payload.email.body || ''}),
     attachments: emailAttachments.map(att => ({
       filename: att.filename,
       content: Buffer.from(att.content, 'hex'),
