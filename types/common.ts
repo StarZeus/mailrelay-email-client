@@ -6,6 +6,7 @@ export interface Email {
   body: string | null;
   bodyJson: Record<string, any> | null;
   isHtml: boolean;
+  read: boolean;
   sentDate: Date;
   attachments?: any[];
 }
@@ -25,4 +26,5 @@ export interface SMTPServerConfig {
 export interface HandlebarsOptions {
   fn: (context: any) => string;
   inverse: (context: any) => string;
+  data: { path: string };
 } 

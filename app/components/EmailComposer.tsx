@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { CodeEditor } from './CodeEditor';
 import { ScrollArea } from "@/components/ui/scroll-area";
-import Handlebars from '@/lib/handlebars-config';
+import { Handlebars } from '@/lib/handlebars-config';
 import { Input } from '@/components/ui/input';
 
 interface EmailComposerProps {

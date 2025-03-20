@@ -5,18 +5,18 @@ import nodemailer from 'nodemailer';
 import { Kafka } from 'kafkajs';
 import micromatch from 'micromatch';
 import { logger, smtpLogger } from '../logger';
-import Handlebars from '../handlebars-config';
 import mjml2html from 'mjml';
 import { Email } from '@/types/common';
 import { ActionPayload } from '@/types/common';
 import { validateActionConfig } from '../utils/validation';
 import { htmlToJson } from '../utils/html';
 import { parseEmail } from '../utils/string';
+import { Handlebars, compileHTML } from '@/lib/handlebars-config';
 
-async function processEmailWithRules(email: Email, specificRuleId?: number, isTest?: boolean) {
+async function processEmailWithRules(email: Email, specificRuleId: number, isTest?: boolean) {
   const logger = smtpLogger.child({ emailId: email.id });
   logger.info('Starting rule processing for email');
-  let currentPayload: ActionPayload = { email };
+  let currentPayload: ActionPayload = { email: { ...email, isHtml: email.isHtml || false } };
 
   try {
     // Get rules - either all enabled rules or just the specific rule
@@ -24,7 +24,7 @@ async function processEmailWithRules(email: Email, specificRuleId?: number, isTe
       .select()
       .from(filterRules)
       .where(
-        specificRuleId 
+        specificRuleId > -1
           ? eq(filterRules.id, specificRuleId)
           : eq(filterRules.enabled, true)
       );
@@ -73,6 +73,7 @@ async function processEmailWithRules(email: Email, specificRuleId?: number, isTe
                 ruleName: rule.name 
               });
 
+              currentPayload = {...currentPayload, email: { ...email,bodyJson: htmlToJson(email.body || '')}};
               currentPayload = await processAction(currentPayload, action);
               
               if (!isTest) {
@@ -237,7 +238,6 @@ async function processAction(payload: ActionPayload, action: typeof filterAction
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       let result: ActionPayload;
-      result = { ...payload, email: { ...payload.email, bodyJson: htmlToJson(payload.email.body || ''), isHtml: payload.email.isHtml || false } };
       
       switch (action.type) {
         case 'forward':
@@ -469,11 +469,10 @@ async function processEmailRelay(payload: ActionPayload, config: Record<string, 
       `);
       
       // Then compile the resulting HTML with Handlebars
-      const template = Handlebars.compile(mjmlResult.html);
-      html = template(emailData);
+      html = compileHTML(mjmlResult.html,emailData);
     } else {
       // HTML template
-      const template = Handlebars.compile(config.htmlTemplate || `
+      html = compileHTML(config.htmlTemplate || `
         <!DOCTYPE html>
         <html>
           <head>
@@ -486,13 +485,12 @@ async function processEmailRelay(payload: ActionPayload, config: Record<string, 
             </div>
           </body>
         </html>
-      `);
-      html = template(emailData);
+      `,emailData);
     }
 
     // Extract recipients using the expression
     let recipients: string[];
-    if (config.recipientExpression === 'email.toEmail') {
+    if (config.recipientExpression === '{{email.toEmail}}') {
       recipients = [payload.email.toEmail];
     } else {
       try {
@@ -503,7 +501,9 @@ async function processEmailRelay(payload: ActionPayload, config: Record<string, 
         // Handle result based on type
         if(result && result.includes(',')) {
           recipients = result.split(',').map((email: string) => email.trim());
-        } else if (typeof result === 'string') {
+        } else if(result && result.includes(';')) {
+          recipients = result.split(';').map((email: string) => email.trim());
+        }else if (typeof result === 'string') {
           // If it's a single email address
           recipients = [result];
         } else if (Array.isArray(result)) {

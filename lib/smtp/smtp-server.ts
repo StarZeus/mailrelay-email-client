@@ -60,7 +60,7 @@ export class EmailServer {
         read: false
       }).returning();
 
-      console.log('emailRecord', emailRecord);
+      sessionLogger.trace({ msg: 'Email added', emailId: email.messageId });
 
       for (const attachment of email.attachments) {
         await db.insert(attachments).values({
@@ -79,9 +79,11 @@ export class EmailServer {
         toEmail: emailRecord[0].toEmail,
         subject: emailRecord[0].subject,
         body: emailRecord[0].body,
+        bodyJson: {},
+        isHtml: false,
         sentDate: emailRecord[0].sentDate || new Date(),
         read: emailRecord[0].read || false
-      }, null, false);
+      }, -999, false);
       
 
       sessionLogger.info({
