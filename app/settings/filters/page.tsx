@@ -198,13 +198,27 @@ export default function FiltersPage() {
     if (currentActionIndex === null || !selectedRule) return;
     
     const newActions = [...selectedRule.actions];
-    const action = newActions[currentActionIndex];
+    let action = newActions[currentActionIndex];
+    console.log("newActions:", newActions);
+    console.log("Action:", action);
+
+    if(!action){
+      action = {
+        id: -Date.now(), // Use negative timestamp as temporary ID
+        ruleId: selectedRule.id,
+        type: 'email-relay',
+        config: {
+          templateType: 'html',
+        },
+        order: selectedRule.actions.length
+      };
+    }
     
     newActions[currentActionIndex] = {
-      ...action,
+      ...(action || {}),
       config: {
-        ...action.config,
-        [action.config.templateType === 'mjml' ? 'mjmlTemplate' : 'htmlTemplate']: template,
+        ...(action.config || {}),
+        [action?.config?.templateType === 'mjml' ? 'mjmlTemplate' : 'htmlTemplate']: template,
         recipientExpression: recipientExpression,
       },
     };
@@ -275,7 +289,7 @@ export default function FiltersPage() {
               ? selectedRule.actions[currentActionIndex || 0]?.config?.mjmlTemplate || ''
               : selectedRule.actions[currentActionIndex || 0]?.config?.htmlTemplate || ''
           }
-          initialRecipientExpression={selectedRule.actions[currentActionIndex || 0]?.config?.recipientExpression || 'email.toEmail'}
+          initialRecipientExpression={selectedRule.actions[currentActionIndex || 0]?.config?.recipientExpression || '{{email.toEmail}}'}
           emailData={emailData}
           onSave={handleSaveTemplate}
         />

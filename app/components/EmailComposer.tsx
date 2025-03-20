@@ -22,7 +22,7 @@ interface EmailComposerProps {
 export const EmailComposer: React.FC<EmailComposerProps> = ({
   templateType,
   initialTemplate,
-  initialRecipientExpression = 'email.toEmail',
+  initialRecipientExpression = '{{email.toEmail}}',
   emailData,
   onSave,
 }) => {
