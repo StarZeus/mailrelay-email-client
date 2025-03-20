@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { emails, processedEmails } from '@/lib/db/schema';
+import { emails,attachments, processedEmails } from '@/lib/db/schema';
 import { desc, eq, like, sql, inArray, isNull } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { webLogger } from '@/lib/logger';
@@ -21,20 +21,25 @@ export async function GET(request: Request) {
 
     let baseQuery = db
       .select({
-        id: emails.id,
-        subject: emails.subject,
-        body: emails.body,
-        fromEmail: emails.fromEmail,
-        toEmail: emails.toEmail,
-        receivedAt: emails.sentDate,
-        read: emails.read,
+      id: emails.id,
+      subject: emails.subject,
+      body: emails.body,
+      fromEmail: emails.fromEmail,
+      toEmail: emails.toEmail,
+      receivedAt: emails.sentDate,
+      read: emails.read,
+      attachments: sql`JSON_AGG(JSON_BUILD_OBJECT('id', ${attachments.id}, 'fileName', ${attachments.filename}))`,
       })
-      .from(emails);
+      .from(emails)
+      .leftJoin(attachments, eq(emails.id, attachments.emailId))
+      .groupBy(emails.id);
 
     if (emailId) {
       const query = baseQuery.where(eq(emails.id, parseInt(emailId)));
       baseQuery = query as typeof baseQuery;
     }
+
+
 
     if (unprocessed) {
       // Left join with processedEmails to find emails that haven't been processed

@@ -62,13 +62,22 @@ export class EmailServer {
 
       sessionLogger.trace({ msg: 'Email added', emailId: email.messageId });
 
-      for (const attachment of email.attachments) {
-        await db.insert(attachments).values({
+      // Insert attachments if provided
+      if (Array.isArray(email.attachments) && email.attachments.length > 0) {
+        const attachmentInserts = email.attachments.map((attachment,index) => ({
           emailId: emailRecord[0].id,
-          filename: attachment.filename || '',
-          contentType: attachment.contentType || '',
-          size: attachment.size || 0,
-          content: attachment.content.toString('base64'),
+          filename: attachment.filename || `file-${index}`,
+          contentType: attachment.contentType,
+          size: attachment.size,
+          content: Buffer.isBuffer(attachment.content) ? attachment.content.toString('hex') : Buffer.from(attachment.content).toString('hex'), // Convert Buffer to hex string
+        }));
+
+        await db.insert(attachments).values(attachmentInserts);
+
+        sessionLogger.info({
+          msg: 'Attachments added successfully',
+          emailId: emailRecord[0].id,
+          attachmentCount: attachmentInserts.length,
         });
       }
 

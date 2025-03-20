@@ -196,7 +196,7 @@ function ProcessedEmailList() {
                             }`}
                             onClick={() => setSelectedEmail(email)}
                           >
-                            <div className="flex items-start gap-2">
+                            <div className="flex items-start">
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center justify-between gap-2">
                                   <div className="truncate text-sm text-gray-900">

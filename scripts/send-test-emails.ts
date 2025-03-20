@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { Readable } from 'stream';
 
 const transporter = nodemailer.createTransport({
   host: '0.0.0.0',
@@ -50,9 +51,22 @@ const testEmails = [
           </tr>
         </table>`,
     attachments: [{
-      filename: 'newsletter.html',
-      content: `<p>For more details, please visit our documentation.</p>
-      `
+      filename: 'data-customer.csv',
+      content: Readable.from([
+        'Column1,Column2,Column3,Column4\n',
+        'Row1Col1,Row1Col2,Row1Col3,Row1Col4\n',
+        'Row2Col1,Row2Col2,Row2Col3,Row2Col4\n',
+        'Row3Col1,Row3Col2,Row3Col3,Row3Col4\n'
+      ])
+    },
+    {
+      filename: 'data-client.csv',
+      content: Readable.from([
+        'Column1,Column2,Column3,Column4\n',
+        'Row1Col1,Row1Col2,Row1Col3,Row1Col4\n',
+        'Row2Col1,Row2Col2,Row2Col3,Row2Col4\n',
+        'Row3Col1,Row3Col2,Row3Col3,Row3Col4\n'
+      ])
     }]
   }
 ];

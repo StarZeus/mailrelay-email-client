@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Toggle } from '@/components/ui/toggle';
 import { toast } from 'sonner';
-import { RefreshCw, Trash2, InboxIcon, CopyPlus } from 'lucide-react';
+import { RefreshCw, Trash2, InboxIcon, CopyPlus, Paperclip } from 'lucide-react';
 import { clientLogger } from '@/lib/logger';
 import DOMPurify from 'isomorphic-dompurify';
 import { parseEmail } from '@/lib/utils/string';
@@ -23,6 +23,7 @@ interface Email {
   sentDate: string;
   read: boolean;
   isHtml?: boolean;
+  attachments?: { id: number; fileName: string }[];
 }
 
 export const EmailList = () => {
@@ -255,7 +256,7 @@ export const EmailList = () => {
                       selectedEmail?.id === email.id ? 'bg-blue-50 border-l-4 border-l-gray-200' : ''
                     } ${!email.read ? 'font-semibold' : ''}`}
                   >
-                    <div className="flex items-start gap-2">
+                    <div className="flex items-start">
                       <div className={`overflow-hidden transition-all duration-200 ${
                         selectedEmails.has(email.id) ? 'w-5' : 'w-0 group-hover:w-5'
                       }`}>
@@ -268,13 +269,11 @@ export const EmailList = () => {
                           }`}
                         />
                       </div>
-                      <div className={`w-2 h-2 mt-2 rounded-full flex-shrink-0 ${
-                        email.read ? 'bg-transparent' : 'bg-blue-500'
-                      }`} />
                       
                       <div 
                         className="min-w-0 flex-1"
                         onClick={() => {
+                          console.log(email);
                           setSelectedEmail(email);
                           if (!email.read) markAsRead(email.id);
                         }}
@@ -340,6 +339,31 @@ export const EmailList = () => {
                     : { children: selectedEmail.body }
                   )}
                 />
+                {selectedEmail.attachments && selectedEmail.attachments.length > 0 && (
+                  <div className="mt-4">
+                    <h2 className="text-lg font-semibold">Attachments ({selectedEmail?.attachments?.length})</h2>
+                    <ul className="list-disc list-inside">
+                      {selectedEmail.attachments.map((attachment, index) => (
+                        <li key={index} className="flex items-center gap-2">
+                          <Paperclip className="h-4 w-4 text-gray-500" />
+                          <a
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = `/api/attachments/${attachment.id}`;
+                            link.download = attachment.fileName;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                          className="text-blue-500 hover:underline cursor-pointer"
+                          >
+                          {String(attachment.fileName)}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </>
