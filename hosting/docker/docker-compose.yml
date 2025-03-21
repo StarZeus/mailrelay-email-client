@@ -1,7 +1,7 @@
 services:
   # Main application in UI mode
   mailrelay-smtp-client-ui:
-    image: starzeus/mailrelay-email-client:v1.8.0
+    image: starzeus/mailrelay-email-client:v1.12.0
     container_name: mailrelay-smtp-client-ui
     environment:
       - NODE_ENV=production
@@ -26,7 +26,7 @@ services:
 
   # SMTP server only mode
   mailrelay-smtp-server:
-    image: starzeus/mailrelay-email-client:v1.8.0
+    image: starzeus/mailrelay-email-client:v1.12.0
     container_name: mailrelay-smtp-server
     environment:
       - NODE_ENV=production
