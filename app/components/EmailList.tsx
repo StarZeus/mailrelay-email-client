@@ -254,7 +254,7 @@ export const EmailList = () => {
                     data-testid="email-item"
                     className={`p-3 transition-all duration-200 hover:bg-gray-50 cursor-pointer border-b group ${
                       selectedEmail?.id === email.id ? 'bg-blue-50 border-l-4 border-l-gray-200' : ''
-                    } ${!email.read ? 'font-semibold' : ''}`}
+                    } ${!email.read ? 'font-semibold text-blue-700' : ''}`}
                   >
                     <div className="flex items-start">
                       <div className={`overflow-hidden transition-all duration-200 ${
@@ -273,7 +273,6 @@ export const EmailList = () => {
                       <div 
                         className="min-w-0 flex-1"
                         onClick={() => {
-                          console.log(email);
                           setSelectedEmail(email);
                           if (!email.read) markAsRead(email.id);
                         }}
