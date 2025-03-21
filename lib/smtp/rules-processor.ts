@@ -16,7 +16,7 @@ import { Handlebars, compileHTML } from '../handlebars-config';
 async function processEmailWithRules(email: Email, specificRuleId: number, isTest?: boolean) {
   const logger = smtpLogger.child({ emailId: email.id });
   logger.info('Starting rule processing for email');
-  let currentPayload: ActionPayload = { email: { ...email, isHtml: email.isHtml || false } };
+  let currentPayload: ActionPayload = { email: { ...email } };
 
   try {
     // Get rules - either all enabled rules or just the specific rule

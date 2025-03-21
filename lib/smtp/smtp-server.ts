@@ -5,8 +5,7 @@ import { emails, attachments } from '../db/schema';
 import { processEmailWithRules } from './rules-processor';
 import { smtpLogger } from '../logger';
 import { SMTPServerConfig } from '@/types/common';
-import * as csvParser from 'csv-parser';
-import * as xlsx from 'xlsx';
+import { parseAttachmentsToJson } from '../utils/json';
 
 export class EmailServer {
   private server: SMTPServer;
@@ -48,7 +47,7 @@ export class EmailServer {
       sessionLogger.trace({ msg: 'Email parsed', emailId: email.messageId });
 
       // Detect if the email is HTML
-      const isHtml = email.html !== false;
+      const isHtml = email.html !== false || this.isHtmlBody(email.text || '');
       const emailBody = isHtml ? email.html : email.text;
 
       // Store email and attachments in database
@@ -101,7 +100,7 @@ export class EmailServer {
         isHtml: false,
         sentDate: emailRecord[0].sentDate || new Date(),
         read: emailRecord[0].read || false,
-        attachments: Array.isArray(attachmentData) ? this.parseAttachmentsToJson(attachmentData) : [],
+        attachments: Array.isArray(attachmentData) ? await parseAttachmentsToJson(attachmentData) : [],
       }, -999, false);
       
 
@@ -134,40 +133,13 @@ export class EmailServer {
     callback(null, { user: auth.username });
   }
 
-  private async parseAttachmentsToJson(attachmentData: { fileName: string; data: Buffer }[]): Promise<{ fileName: string; data: any[] }[]> {
-    const parsedData = [];
-
-    for (const attachment of attachmentData) {
-      const { fileName, data } = attachment;
-      const fileExtension = fileName.split('.').pop()?.toLowerCase();
-
-      if (fileExtension === 'csv') {
-        const csvData = [];
-        const stream = data.toString('utf-8');
-        await new Promise((resolve, reject) => {
-          const parser = csvParser();
-          parser.on('data', (row) => csvData.push(row));
-          parser.on('end', resolve);
-          parser.on('error', reject);
-          stream.split('\n').forEach((line) => parser.write(line));
-          parser.end();
-        });
-        parsedData.push({ fileName, data: csvData });
-      } else if (fileExtension === 'xlsx') {
-        const workbook = xlsx.read(data, { type: 'buffer' });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const jsonData = xlsx.utils.sheet_to_json(sheet);
-        parsedData.push({ fileName, data: jsonData });
-      } else if (fileExtension === 'json') {
-        const jsonData = JSON.parse(data.toString('utf-8'));
-        parsedData.push({ fileName, data: Array.isArray(jsonData) ? jsonData : [jsonData] });
-      } else {
-        parsedData.push({ fileName, data: [] }); // Unsupported file type
-      }
-    }
-
-    return parsedData;
+  private isHtmlBody(body: string): boolean {
+    const isHtml = body?.toLowerCase().includes('<!doctype html') || 
+        body?.toLowerCase().includes('<html') ||
+        (body?.includes('<') && body?.includes('>') && 
+        (body?.includes('<div') || body?.includes('<p') || 
+        body?.includes('<table') || body?.includes('<a')));
+    return isHtml;
   }
 
   public async start() {

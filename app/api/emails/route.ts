@@ -1,9 +1,10 @@
 import { db } from '@/lib/db';
 import { emails,attachments, processedEmails } from '@/lib/db/schema';
-import { desc, eq, like, sql, inArray, isNull } from 'drizzle-orm';
+import { asc, desc, eq, like, sql, inArray, isNull } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { webLogger } from '@/lib/logger';
 import { htmlToJson } from '@/lib/utils/html';
+import { parseAttachmentsToJson } from '@/lib/utils/json';
 
 const PAGE_SIZE = 20;
 
@@ -28,8 +29,9 @@ export async function GET(request: Request) {
       fromEmail: emails.fromEmail,
       toEmail: emails.toEmail,
       receivedAt: emails.sentDate,
+      isHtml: emails.isHtml,
       read: emails.read,
-      attachments: sql`JSON_AGG(JSON_BUILD_OBJECT('id', ${attachments.id}, 'fileName', ${attachments.filename}))`,
+      attachments: sql`JSON_AGG(JSON_BUILD_OBJECT('id', ${attachments.id}, 'fileName', ${attachments.filename}))`.as('attachments'),
       })
       .from(emails)
       .leftJoin(attachments, eq(emails.id, attachments.emailId))
@@ -78,25 +80,10 @@ export async function GET(request: Request) {
     if(attachmentSchema) {
       // Populate attachment schema for each email
       for (let i = 0; i < results.length; i++) {
-        results[i] = await populateAttachmentSchema(results[i]);
+        results[i] = await getAttachmentsData(results[i], true);  // true - Get only sample data for schema
+        results[i]["bodyJson"] = results[i].body ? htmlToJson(results[i].body) : {};
       }
     }
-    
-    // Process results to convert HTML body to JSON when possible
-    const mappedArray = results.map(email => {
-      // Check if content appears to be HTML
-      const isHtml = email.body?.toLowerCase().includes('<!doctype html') || 
-                    email.body?.toLowerCase().includes('<html') ||
-                    (email.body?.includes('<') && email.body?.includes('>') && 
-                     (email.body?.includes('<div') || email.body?.includes('<p') || 
-                      email.body?.includes('<table') || email.body?.includes('<a')));
-
-      return {
-        ...email,
-        isHtml,
-        bodyJson: email.body ? htmlToJson(email.body) : {body: email.body}
-      };
-    });
 
     logger.info({
       msg: 'Emails fetched successfully',
@@ -105,7 +92,7 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.json({
-      emails: mappedArray.slice(0, PAGE_SIZE),
+      emails: results.slice(0, PAGE_SIZE),
       nextCursor: results.length > PAGE_SIZE ? results[PAGE_SIZE - 1].id : null
     });
   } catch (error) {
@@ -205,102 +192,28 @@ export async function DELETE(request: Request) {
   }
 }
 
-async function populateAttachmentSchema(email: any) {
-    if (Array.isArray(email.attachments) && email.attachments.length > 0) {
-      // Sort attachments by ID
-      email.attachments = email.attachments.sort((a, b) => a.id - b.id);
+async function getAttachmentsData(email: any, isSample: boolean) {
+  if (Array.isArray(email.attachments) && email.attachments.length > 0) {
+    const attachmentIds = email.attachments.map((attachment) => attachment.id);
+    const attachmentResults = await db
+      .select({
+        id: attachments.id,
+        fileName: attachments.filename,
+        data: attachments.content,
+      })
+      .from(attachments)
+      .where(inArray(attachments.id, attachmentIds))
+      .orderBy(asc(attachments.id));
 
-      for (const attachment of email.attachments) {
-        attachment.id = attachment.id;
-        attachment.fileName = attachment.fileName;
-        attachment.data = {};
-
-        // When attachment type is csv, json, or excel, parse the content and return the schema
-        if (attachment.fileName.endsWith('.csv') || attachment.fileName.endsWith('.json') || attachment.fileName.endsWith('.xlsx')) {
-          // Read the attachment content from the table and parse it
-          const attachmentResult = await db
-            .select({ content: attachments.content })
-            .from(attachments)
-            .where(eq(attachments.id, attachment.id))
-            .limit(1);
-
-          if (!attachmentResult || attachmentResult.length === 0 || !attachmentResult[0].content) {
-            attachment.data = { error: 'Attachment content not found or invalid' };
-            continue;
-          }
-
-          const attachmentContent = attachmentResult[0].content;
-
-          // Convert bytea content to Buffer
-          const buffer = Buffer.from(attachmentContent, 'hex');
-
-          if (attachment.fileName.endsWith('.csv') || attachment.fileName.endsWith('.xlsx')) {
-            // Get the first line of the CSV content and assume it's the header
-            const lines = buffer.toString().split('\n');
-            if (lines.length === 0 || !lines[0].trim()) {
-              attachment.data = { error: 'Unsupported attachment schema' };
-              continue;
-            }
-
-            const firstLine = lines[0];
-            const secondLine = lines.length > 1 ? lines[1] : null;
-
-            const allFields = firstLine.split(',')
-              .map(field => field.trim().replace(/[^a-zA-Z0-9]/g, '_'));
-            const allValues = secondLine ? secondLine.split(',') : [];
-
-            attachment.data = allFields.reduce((schema, field, index) => {
-              schema[field] = allValues.length > index ? allValues[index]?.trim() || '' : '';
-              return schema;
-            }, {});
-
-            } else if (attachment.fileName.endsWith('.json')) {
-              // Get the first row of the JSON content
-              const jsonDocument = JSON.parse(buffer.toString());
-              if (Array.isArray(jsonDocument) && jsonDocument.length > 0) {
-                attachment.data = jsonDocument[0];
-              } else if (typeof jsonDocument === 'object') {
-                attachment.data = jsonDocument;
-              } else {
-                attachment.data = { error: 'Unsupported JSON attachment' };
-              }
-            }
-          } else {
-            attachment.data = { error: 'Unsupported attachment' };
-          }
-
-          attachment.data = leanJson(attachment.data);
-       }
-    }
-    return email;
-}
-
-function leanJson(obj) {
-  if(Array.isArray(obj)){
-    return obj.length > 0 ? leanJson(obj[0]) : [];
-  }else if(typeof obj == 'object') {
-    // Make the object lean by keeping only the first item of an array, if it's an array
-    // keep only the first 30 characters of a string
-    // and recursively call leanJson on the object
-    const newObj = {};
-    for (const key in obj) {
-      if (Array.isArray(obj[key])) {
-        newObj[key] = obj[key].length > 0 ? leanJson(obj[key][0]) : [];
-      } else if (typeof obj[key] === 'string') {
-        newObj[key] = obj[key].slice(0, 20);
-      } else if (typeof obj[key] === 'object') {
-        newObj[key] = leanJson(obj[key]);
-      } else {
-        newObj[key] = obj[key];
-      }
-    }
-    return newObj;
-  }else if(typeof obj === 'string'){
-    if(obj.length > 30){
-      return obj.slice(0, 27) + '...';
-    }
-    return obj; 
-  }else{
-    return obj;
+    // Convert each attachment to buffer and parse it
+    email.attachments = attachmentResults.map((attachment) => ({
+      id: attachment.id,
+      fileName: attachment.fileName,
+      data: Buffer.from(attachment.data, 'hex'), // Convert hex string to Buffer
+    }));
+    // Parse the attachments to JSON
+    email.attachments = await parseAttachmentsToJson(email.attachments, isSample);
   }
+  return email;
 }
+

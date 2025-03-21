@@ -12,7 +12,7 @@ const testEmails = [
     from: 'sender@hotmail.com',
     to: 'subscribers@company.com',
     subject: 'Monthly System Updates',
-    text: `<h1>Monthly System Updates</h1>
+    html: `<h1>Monthly System Updates</h1>
         <p>Here are the key updates from this month:</p>
         
         <h2>New Features</h2>

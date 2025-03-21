@@ -57,13 +57,21 @@ export const SortableAction = ({ action, index, isEditing, onDelete, onChange, o
               <SelectTrigger>
                 <SelectValue placeholder="Select action type" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="forward">Forward</SelectItem>
-                <SelectItem value="webhook">Webhook</SelectItem>
-                <SelectItem value="kafka">Kafka</SelectItem>
-                <SelectItem value="javascript">JavaScript</SelectItem>
-                <SelectItem value="email-relay">Email Relay</SelectItem>
-              </SelectContent>
+                <SelectContent>
+                {[
+                  { value: 'forward', label: 'Forward' },
+                  { value: 'webhook', label: 'Webhook' },
+                  { value: 'kafka', label: 'Kafka' },
+                  { value: 'javascript', label: 'Transform with Javascript' },
+                  { value: 'email-relay', label: 'Email Relay' },
+                ]
+                  .sort((a, b) => a.label.localeCompare(b.label))
+                  .map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                  ))}
+                </SelectContent>
             </Select>
 
             <div className="flex items-center gap-2">

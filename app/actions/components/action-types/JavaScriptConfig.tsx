@@ -30,9 +30,8 @@ Input Object:
     isHtml: boolean       // Whether the email is HTML
     sentDate: Date        // When email was sent
     attachments: {
-      filename: string
-      content: string
-      contentType: string
+      fileName: string
+      data: [{}]          // Attachment data as JSON array
     }[]
   },
   chainData: any // Chain data from previous actions
