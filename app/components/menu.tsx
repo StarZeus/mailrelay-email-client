@@ -31,9 +31,9 @@ export function NavMenu() {
         <span className="pl-2">Processed</span>
       </Link>
       <Link
-        href="/settings/filters"
+        href="/actions"
         className={`flex items-center space-x-1 px-6 py-4 rounded ${
-          pathname === '/settings/filters'
+          pathname === '/actions'
             ? 'bg-blue-50 text-blue-700 font-medium'
             : 'text-gray-700 hover:bg-gray-100'
         }`}

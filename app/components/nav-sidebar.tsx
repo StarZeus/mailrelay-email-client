@@ -76,7 +76,7 @@ export function AppSidebar() {
                                 label: 'Processed'
                               },
                               {
-                                href: '/settings/filters',
+                                href: '/actions',
                                 icon: <Settings size={20} />,
                                 label: 'Filters & Actions'
                               }

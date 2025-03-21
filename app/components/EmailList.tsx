@@ -160,7 +160,7 @@ export const EmailList = () => {
     console.log('params', params.toString());
 
     // Navigate to filters page with prefilled data
-    router.push(`/settings/filters?${params.toString()}`);
+    router.push(`/actions?${params.toString()}`);
   };
 
   const toggleEmailSelection = (id: number, checked: boolean) => {

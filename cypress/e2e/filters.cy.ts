@@ -1,6 +1,6 @@
 describe('Filters & Actions Page', () => {
   beforeEach(() => {
-    cy.visit('/settings/filters');
+    cy.visit('/actions');
   });
 
   it('displays the filters page layout correctly', () => {

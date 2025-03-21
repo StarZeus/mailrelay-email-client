@@ -23,7 +23,7 @@ describe('Navigation Menu', () => {
       cy.get('a').contains('Processed').should('have.class', 'bg-blue-50');
     });
 
-    cy.visit('/settings/filters', { timeout: 10000 });
+    cy.visit('/actions', { timeout: 10000 });
     cy.get('nav').within(() => {
       cy.get('a').contains('Filters & Actions').should('have.class', 'bg-blue-50');
     });
@@ -38,7 +38,7 @@ describe('Navigation Menu', () => {
       cy.url().should('include', '/processed');
 
       cy.contains('Filters & Actions').click();
-      cy.url().should('include', '/settings/filters');
+      cy.url().should('include', '/actions');
     });
   });
 
