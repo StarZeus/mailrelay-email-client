@@ -207,10 +207,13 @@ export async function DELETE(request: Request) {
 
 async function populateAttachmentSchema(email: any) {
     if (Array.isArray(email.attachments) && email.attachments.length > 0) {
+      // Sort attachments by ID
+      email.attachments = email.attachments.sort((a, b) => a.id - b.id);
+
       for (const attachment of email.attachments) {
         attachment.id = attachment.id;
         attachment.fileName = attachment.fileName;
-        attachment.schema = {};
+        attachment.data = {};
 
         // When attachment type is csv, json, or excel, parse the content and return the schema
         if (attachment.fileName.endsWith('.csv') || attachment.fileName.endsWith('.json') || attachment.fileName.endsWith('.xlsx')) {
@@ -222,7 +225,7 @@ async function populateAttachmentSchema(email: any) {
             .limit(1);
 
           if (!attachmentResult || attachmentResult.length === 0 || !attachmentResult[0].content) {
-            attachment.schema = { error: 'Attachment content not found or invalid' };
+            attachment.data = { error: 'Attachment content not found or invalid' };
             continue;
           }
 
@@ -235,7 +238,7 @@ async function populateAttachmentSchema(email: any) {
             // Get the first line of the CSV content and assume it's the header
             const lines = buffer.toString().split('\n');
             if (lines.length === 0 || !lines[0].trim()) {
-              attachment.schema = { error: 'Unsupported attachment schema' };
+              attachment.data = { error: 'Unsupported attachment schema' };
               continue;
             }
 
@@ -246,7 +249,7 @@ async function populateAttachmentSchema(email: any) {
               .map(field => field.trim().replace(/[^a-zA-Z0-9]/g, '_'));
             const allValues = secondLine ? secondLine.split(',') : [];
 
-            attachment.schema = allFields.reduce((schema, field, index) => {
+            attachment.data = allFields.reduce((schema, field, index) => {
               schema[field] = allValues.length > index ? allValues[index]?.trim() || '' : '';
               return schema;
             }, {});
@@ -255,18 +258,18 @@ async function populateAttachmentSchema(email: any) {
               // Get the first row of the JSON content
               const jsonDocument = JSON.parse(buffer.toString());
               if (Array.isArray(jsonDocument) && jsonDocument.length > 0) {
-                attachment.schema = jsonDocument[0];
+                attachment.data = jsonDocument[0];
               } else if (typeof jsonDocument === 'object') {
-                attachment.schema = jsonDocument;
+                attachment.data = jsonDocument;
               } else {
-                attachment.schema = { error: 'Unsupported JSON attachment' };
+                attachment.data = { error: 'Unsupported JSON attachment' };
               }
             }
           } else {
-            attachment.schema = { error: 'Unsupported attachment' };
+            attachment.data = { error: 'Unsupported attachment' };
           }
 
-          attachment.schema = leanJson(attachment.schema);
+          attachment.data = leanJson(attachment.data);
        }
     }
     return email;
@@ -277,7 +280,7 @@ function leanJson(obj) {
     return obj.length > 0 ? leanJson(obj[0]) : [];
   }else if(typeof obj == 'object') {
     // Make the object lean by keeping only the first item of an array, if it's an array
-    // keep only the first 20 characters of a string
+    // keep only the first 30 characters of a string
     // and recursively call leanJson on the object
     const newObj = {};
     for (const key in obj) {
@@ -293,7 +296,10 @@ function leanJson(obj) {
     }
     return newObj;
   }else if(typeof obj === 'string'){
-    return obj.slice(0, 20);  
+    if(obj.length > 30){
+      return obj.slice(0, 27) + '...';
+    }
+    return obj; 
   }else{
     return obj;
   }

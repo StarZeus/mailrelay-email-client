@@ -5,6 +5,8 @@ import { emails, attachments } from '../db/schema';
 import { processEmailWithRules } from './rules-processor';
 import { smtpLogger } from '../logger';
 import { SMTPServerConfig } from '@/types/common';
+import * as csvParser from 'csv-parser';
+import * as xlsx from 'xlsx';
 
 export class EmailServer {
   private server: SMTPServer;
@@ -62,6 +64,8 @@ export class EmailServer {
 
       sessionLogger.trace({ msg: 'Email added', emailId: email.messageId });
 
+      let attachmentData:{fileName:string,data:Buffer<ArrayBufferLike>}[] = undefined;
+
       // Insert attachments if provided
       if (Array.isArray(email.attachments) && email.attachments.length > 0) {
         const attachmentInserts = email.attachments.map((attachment,index) => ({
@@ -73,6 +77,11 @@ export class EmailServer {
         }));
 
         await db.insert(attachments).values(attachmentInserts);
+
+        attachmentData = email.attachments.map((attachment, index) => ({
+          fileName: attachment.filename || `file-${index}`,
+          data: attachment.content
+        }));
 
         sessionLogger.info({
           msg: 'Attachments added successfully',
@@ -91,7 +100,8 @@ export class EmailServer {
         bodyJson: {},
         isHtml: false,
         sentDate: emailRecord[0].sentDate || new Date(),
-        read: emailRecord[0].read || false
+        read: emailRecord[0].read || false,
+        attachments: Array.isArray(attachmentData) ? this.parseAttachmentsToJson(attachmentData) : [],
       }, -999, false);
       
 
@@ -122,6 +132,42 @@ export class EmailServer {
     
     // For now, accept all auth
     callback(null, { user: auth.username });
+  }
+
+  private async parseAttachmentsToJson(attachmentData: { fileName: string; data: Buffer }[]): Promise<{ fileName: string; data: any[] }[]> {
+    const parsedData = [];
+
+    for (const attachment of attachmentData) {
+      const { fileName, data } = attachment;
+      const fileExtension = fileName.split('.').pop()?.toLowerCase();
+
+      if (fileExtension === 'csv') {
+        const csvData = [];
+        const stream = data.toString('utf-8');
+        await new Promise((resolve, reject) => {
+          const parser = csvParser();
+          parser.on('data', (row) => csvData.push(row));
+          parser.on('end', resolve);
+          parser.on('error', reject);
+          stream.split('\n').forEach((line) => parser.write(line));
+          parser.end();
+        });
+        parsedData.push({ fileName, data: csvData });
+      } else if (fileExtension === 'xlsx') {
+        const workbook = xlsx.read(data, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = xlsx.utils.sheet_to_json(sheet);
+        parsedData.push({ fileName, data: jsonData });
+      } else if (fileExtension === 'json') {
+        const jsonData = JSON.parse(data.toString('utf-8'));
+        parsedData.push({ fileName, data: Array.isArray(jsonData) ? jsonData : [jsonData] });
+      } else {
+        parsedData.push({ fileName, data: [] }); // Unsupported file type
+      }
+    }
+
+    return parsedData;
   }
 
   public async start() {
