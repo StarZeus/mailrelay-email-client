@@ -564,7 +564,7 @@ async function processEmailRelay(payload: ActionPayload, config: Record<string, 
         html: html,
         attachments: emailAttachments.map(att => ({
           filename: att.filename,
-          content: Buffer.from(att.content, 'base64'),
+          content: Buffer.from(att.content, 'hex'),
           contentType: att.contentType,
         })),
       });

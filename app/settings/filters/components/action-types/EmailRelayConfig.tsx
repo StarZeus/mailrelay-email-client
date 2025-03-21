@@ -127,7 +127,7 @@ export const EmailRelayConfig = ({ action, isEditing, onChange, onOpenComposer, 
               ))}
             </div>
             <div className="mt-4 text-xs text-gray-500">
-              Drag variables into your template or click to copy
+              Drag variables into your template to insert dynamic content
             </div>
             {action.config.templateType === 'mjml' && (
               <div className="mt-4 p-2 bg-blue-50 rounded text-xs">
