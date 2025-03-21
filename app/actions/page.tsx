@@ -56,7 +56,7 @@ export default function FiltersPage() {
 
   async function addNewRuleFromEmail(emailId: string) {
     try {
-      const emailsPromise = await fetch(`/api/emails?id=${emailId}`);
+      const emailsPromise = await fetch(`/api/emails?attachmentSchema=true&id=${emailId}`);
       const emailData = await emailsPromise.json();
 
       if(Array.isArray(emailData.emails) && emailData.emails.length === 0) {
