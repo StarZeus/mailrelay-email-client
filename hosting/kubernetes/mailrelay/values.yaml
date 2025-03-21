@@ -52,6 +52,7 @@ mailrelay:
       appMode: smtp-client
       nextauthUrl: "http://localhost:3000"
       oidcAuthEnabled: "false"
+      baseUrl: "/"  # Add a new environment variable for controlling the base URL
 
   # SMTP Server Configuration
   server:
@@ -178,4 +179,4 @@ mockserver:
     tag: latest
   service:
     type: ClusterIP
-    port: 1080 
+    port: 1080

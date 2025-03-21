@@ -1,4 +1,4 @@
-{{- if .Values.mailrelay.server.enabled }}
+{{- if .Values.mailrelay.client.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,7 +7,7 @@ metadata:
     {{- include "mailrelay.labels" . | nindent 4 }}
     app.kubernetes.io/component: smtp-client
 spec:
-  replicas: {{ .Values.mailrelay.server.replicaCount }}
+  replicas: {{ .Values.mailrelay.client.replicaCount }}
   selector:
     matchLabels:
       {{- include "mailrelay.selectorLabels" . | nindent 6 }}
@@ -39,21 +39,23 @@ spec:
       {{- end }}
       containers:
         - name: smtp-client
-          image: {{ include "mailrelay.getImage" (dict "image" .Values.mailrelay.server.image "global" .Values.global.registry) }}
-          imagePullPolicy: {{ .Values.mailrelay.server.image.pullPolicy }}
+          image: {{ include "mailrelay.getImage" (dict "image" .Values.mailrelay.client.image "global" .Values.global.registry) }}
+          imagePullPolicy: {{ .Values.mailrelay.client.image.pullPolicy }}
           ports:
             - name: smtp
-              containerPort: {{ .Values.mailrelay.server.service.smtpPort }}
+              containerPort: {{ .Values.mailrelay.client.service.smtpPort }}
               protocol: TCP
           env:
             - name: NODE_ENV
-              value: {{ .Values.mailrelay.server.config.nodeEnv }}
+              value: {{ .Values.mailrelay.client.config.nodeEnv }}
             - name: APP_MODE
-              value: {{ .Values.mailrelay.server.config.appMode }}
+              value: {{ .Values.mailrelay.client.config.appMode }}
             - name: SMTP_SERVER_PORT
-              value: {{ .Values.mailrelay.server.config.smtpServerPort | quote }}
+              value: {{ .Values.mailrelay.client.config.smtpServerPort | quote }}
             - name: KAFKA_BROKERS
               value: {{ .Release.Name }}-kafka:9092
+            - name: NEXT_PUBLIC_BASE_URL
+              value: {{ .Values.mailrelay.client.config.baseUrl | quote }}
           envFrom:
             - secretRef:
                 {{- if .Values.mailrelay.existingSecretName }}  
@@ -62,7 +64,7 @@ spec:
                 name: {{ .Release.Name }}-secrets
                 {{- end }}
           resources:
-            {{- toYaml .Values.mailrelay.server.resources | nindent 12 }}
+            {{- toYaml .Values.mailrelay.client.resources | nindent 12 }}
           livenessProbe:
             tcpSocket:
               port: smtp
