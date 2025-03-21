@@ -157,8 +157,6 @@ export const EmailList = () => {
       filterEmail: selectedEmailIds[0].toString()
     });
 
-    console.log('params', params.toString());
-
     // Navigate to filters page with prefilled data
     router.push(`/actions?${params.toString()}`);
   };

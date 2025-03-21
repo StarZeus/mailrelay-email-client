@@ -161,7 +161,7 @@ async function processEmailWithRules(email: Email, specificRuleId: number, isTes
       }
     }
     
-    logger.info({ 
+    logger.debug({ 
       msg: 'Rule processing completed for email',
       matchedRulesCount: matchedRules.length,
       matchedRules: matchedRules.map(r => ({ id: r.id, name: r.name }))
@@ -238,6 +238,7 @@ async function processAction(payload: ActionPayload, action: typeof filterAction
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       let result: ActionPayload;
+      logger.debug({ msg: 'Processing action', actionType: action.type, attempt });
       
       switch (action.type) {
         case 'forward':
@@ -424,7 +425,7 @@ async function runJavaScript(input: ActionPayload, code: string): Promise<Action
     };
   }
 
-  logger.debug({ msg: 'JavaScript action completed for email', result: result.chainData });
+  logger.debug({ msg: 'JavaScript action completed for email id', emailId: input.email.id });
   
   return result;
 }

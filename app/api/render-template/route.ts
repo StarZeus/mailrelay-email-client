@@ -22,9 +22,7 @@ export async function POST(request: NextRequest) {
 
     // Ensure data is properly structured
     const templateData = data || {};
-    
-    // Log the data for debugging
-    console.log('Template data:', JSON.stringify(templateData, null, 2));
+
 
     let html = '';
 

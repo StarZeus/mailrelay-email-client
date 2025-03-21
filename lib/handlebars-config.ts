@@ -77,7 +77,7 @@ const compileHTML = (template: string, data: any) => {
     noEscape: true // Important for HTML content
   });
   const html = compiledTemplate(data);
-  console.log('Compiled HTML:', html);
+  console.log('Compiled HTML:', html.slice(0, 100)); // Log only the first 100 characters for debugging
   return html;
 };
 

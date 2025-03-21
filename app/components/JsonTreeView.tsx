@@ -103,18 +103,18 @@ export const JsonTreeView: React.FC<JsonTreeViewProps> = ({ data, onDragStart })
     
     if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
       return `{{#each ${path}}}
-  {{#with this}}
-    {{#each this}}
-      {{@key}}: {{this}}
-    {{/each}}
-  {{/with}}
-{{/each}}`;
+                {{#with this}}
+                  {{#each this}}
+                    {{@key}}: {{this}}
+                  {{/each}}
+                {{/with}}
+              {{/each}}`;
     }
     
     // Simple array
     return `{{#each ${path}}}
-  {{this}}
-{{/each}}`;
+              {{this}}
+            {{/each}}`;
   };
 
   const renderLabel = (keyPath: (string | number)[], nodeType: string, expanded: boolean) => {
