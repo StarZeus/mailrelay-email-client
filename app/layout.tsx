@@ -23,14 +23,14 @@ export default async function RootLayout({
 }) {
   return (
     <html lang="en" className={`bg-white text-gray-800 ${inter.className}`}>
-      <body className="flex h-screen" suppressHydrationWarning>
+      <body className="flex h-screen overflow-hidden" suppressHydrationWarning>
         <AuthProvider>
-          <div className="flex flex-col h-full flex-1">
+          <div className="flex h-full w-64 flex-shrink-0">
             <SidebarProvider>
               <AppSidebar />
             </SidebarProvider>
           </div>
-          <div className="flex flex-col w-full">
+          <div className="flex flex-col flex-1">
             <Header />
             <main className="flex-1 overflow-hidden">
               {children}

@@ -27,8 +27,8 @@ export const FilterList = () => {
   }
 
   return (
-    <div className="border-r border-gray-200 overflow-hidden flex flex-col">
-      <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+    <div className="h-full flex flex-col border-r border-gray-200">
+      <div className="flex-shrink-0 p-4 border-b border-gray-200 flex justify-between items-center">
         <h1 className="text-lg font-semibold">Filters & Actions</h1>
         <Button 
           variant="ghost"
@@ -41,7 +41,7 @@ export const FilterList = () => {
           <span className="sr-only">Add new rule</span>
         </Button>
       </div>
-      <div className="divide-y divide-gray-200" data-testid="filter-list">
+      <div className="flex-1 overflow-y-auto divide-y divide-gray-200" data-testid="filter-list">
         {filters?.map((rule:FilterRule) => (
           <div
             key={rule.id}

@@ -256,8 +256,8 @@ export const FilterDetails = () => {
   }
 
   return (
-    <>
-      <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-shrink-0 p-4 border-b border-gray-200 flex justify-between items-center">
         <h2 className="text-lg font-semibold">
           {isEditing ? 'Edit Rule' : 'Rule Details'}
         </h2>
@@ -330,134 +330,136 @@ export const FilterDetails = () => {
         </div>
       </div>
 
-      <div className="p-6 space-y-6 flex-1 overflow-auto">
-        <div className="space-y-4">
-          <div>
-            <Label>Name</Label>
-            <Input
-              value={localRule.name}
-              onChange={(e) => handleLocalUpdate({ name: e.target.value })}
-              disabled={!isEditing}
-            />
-          </div>
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <div>
+              <Label>Name</Label>
+              <Input
+                value={localRule.name}
+                onChange={(e) => handleLocalUpdate({ name: e.target.value })}
+                disabled={!isEditing}
+              />
+            </div>
 
-          <div>
-            <Label>Logical Operator</Label>
-            <Select
-              value={localRule.operator}
-              onValueChange={(value: 'AND' | 'OR') => 
-                handleLocalUpdate({ operator: value })
-              }
-              disabled={!isEditing}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="AND">Match ALL conditions (AND)</SelectItem>
-                <SelectItem value="OR">Match ANY condition (OR)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label>From Pattern</Label>
-            <Input
-              value={localRule.fromPattern || ''}
-              onChange={(e) => handleLocalUpdate({ fromPattern: e.target.value })}
-              disabled={!isEditing}
-            />
-          </div>
-
-          <div>
-            <Label>To Pattern</Label>
-            <Input
-              value={localRule.toPattern || ''}
-              onChange={(e) => handleLocalUpdate({ toPattern: e.target.value })}
-              disabled={!isEditing}
-            />
-          </div>
-
-          <div>
-            <Label>Subject Pattern</Label>
-            <Input
-              value={localRule.subjectPattern || ''}
-              onChange={(e) => handleLocalUpdate({ subjectPattern: e.target.value })}
-              disabled={!isEditing}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Actions</h3>
-            {isEditing && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                title="Add new action"
-                onClick={() => {
-                  handleLocalUpdate({
-                    actions: [
-                      ...localRule.actions,
-                      {
-                        id: -Date.now(),
-                        ruleId: localRule.id,
-                        type: 'forward',
-                        config: {},
-                        order: localRule.actions.length
-                      },
-                    ],
-                  });
-                }}
+            <div>
+              <Label>Logical Operator</Label>
+              <Select
+                value={localRule.operator}
+                onValueChange={(value: 'AND' | 'OR') => 
+                  handleLocalUpdate({ operator: value })
+                }
+                disabled={!isEditing}
               >
-                <BadgePlus className="h-5 w-5" />
-                <span className="sr-only">Add new action</span>
-              </Button>
-            )}
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AND">Match ALL conditions (AND)</SelectItem>
+                  <SelectItem value="OR">Match ANY condition (OR)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>From Pattern</Label>
+              <Input
+                value={localRule.fromPattern || ''}
+                onChange={(e) => handleLocalUpdate({ fromPattern: e.target.value })}
+                disabled={!isEditing}
+              />
+            </div>
+
+            <div>
+              <Label>To Pattern</Label>
+              <Input
+                value={localRule.toPattern || ''}
+                onChange={(e) => handleLocalUpdate({ toPattern: e.target.value })}
+                disabled={!isEditing}
+              />
+            </div>
+
+            <div>
+              <Label>Subject Pattern</Label>
+              <Input
+                value={localRule.subjectPattern || ''}
+                onChange={(e) => handleLocalUpdate({ subjectPattern: e.target.value })}
+                disabled={!isEditing}
+              />
+            </div>
           </div>
 
           <div className="space-y-4">
-            {localRule.actions.map((action, index) => (
-              <div key={action.id} className="flex gap-2">
-                <div className="flex-1">
-                  <SortableAction
-                    key={action.id}
-                    action={action}
-                    index={index}
-                    isEditing={isEditing}
-                    onDelete={() => handleDeleteAction(localRule.id, action.id)}
-                    onChange={(updatedAction) => {
-                      const newActions = [...localRule.actions];
-                      newActions[index] = updatedAction;
-                      handleLocalUpdate({ actions: newActions });
-                    }}
-                    onMoveAction={(direction) => handleMoveAction(index, direction)}
-                    totalActions={localRule.actions.length}
-                    onOpenComposer={handleOpenComposer}
-                  />
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Actions</h3>
+              {isEditing && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  title="Add new action"
+                  onClick={() => {
+                    handleLocalUpdate({
+                      actions: [
+                        ...localRule.actions,
+                        {
+                          id: -Date.now(),
+                          ruleId: localRule.id,
+                          type: 'forward',
+                          config: {},
+                          order: localRule.actions.length
+                        },
+                      ],
+                    });
+                  }}
+                >
+                  <BadgePlus className="h-5 w-5" />
+                  <span className="sr-only">Add new action</span>
+                </Button>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              {localRule.actions.map((action, index) => (
+                <div key={action.id} className="flex gap-2">
+                  <div className="flex-1">
+                    <SortableAction
+                      key={action.id}
+                      action={action}
+                      index={index}
+                      isEditing={isEditing}
+                      onDelete={() => handleDeleteAction(localRule.id, action.id)}
+                      onChange={(updatedAction) => {
+                        const newActions = [...localRule.actions];
+                        newActions[index] = updatedAction;
+                        handleLocalUpdate({ actions: newActions });
+                      }}
+                      onMoveAction={(direction) => handleMoveAction(index, direction)}
+                      totalActions={localRule.actions.length}
+                      onOpenComposer={handleOpenComposer}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
-            {selectedRule && (
-              <EmailComposerDialog
-                open={composerOpen}
-                onOpenChange={setComposerOpen}
-                templateType={selectedRule.actions[currentActionIndex || 0]?.config?.templateType || 'html'}
-                initialTemplate={
-                  selectedRule.actions[currentActionIndex || 0]?.config?.templateType === 'mjml'
-                    ? selectedRule.actions[currentActionIndex || 0]?.config?.mjmlTemplate || ''
-                    : selectedRule.actions[currentActionIndex || 0]?.config?.htmlTemplate || ''
-                }
-                initialRecipientExpression={selectedRule.actions[currentActionIndex || 0]?.config?.recipientExpression || '{{email.toEmail}}'}
-                emailData={emailData}
-                onSave={handleSaveTemplate}
-              />
-            )}
+              ))}
+              {selectedRule && (
+                <EmailComposerDialog
+                  open={composerOpen}
+                  onOpenChange={setComposerOpen}
+                  templateType={selectedRule.actions[currentActionIndex || 0]?.config?.templateType || 'html'}
+                  initialTemplate={
+                    selectedRule.actions[currentActionIndex || 0]?.config?.templateType === 'mjml'
+                      ? selectedRule.actions[currentActionIndex || 0]?.config?.mjmlTemplate || ''
+                      : selectedRule.actions[currentActionIndex || 0]?.config?.htmlTemplate || ''
+                  }
+                  initialRecipientExpression={selectedRule.actions[currentActionIndex || 0]?.config?.recipientExpression || '{{email.toEmail}}'}
+                  emailData={emailData}
+                  onSave={handleSaveTemplate}
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }; 
