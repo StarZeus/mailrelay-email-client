@@ -17,13 +17,6 @@ if git tag -l "v$VERSION" | grep -q "v$VERSION"; then
   VERSION=$(node -p "require('./package.json').version")
   VERSION=$(echo $VERSION | awk -F. '{print $1"."$2+1".0"}')
 
-  # Update image version for mailrelay-email-client in hosting/docker/docker-compose.yml
-  sed -i "s/image: mailrelay-email-client:v[0-9]\+\.[0-9]\+\.[0-9]\+/image: mailrelay-email-client:$VERSION/" hosting/docker/docker-compose.yml
-
-  # Update version in Kubernetes Helm chart (chart.yaml and values.yaml)
-  sed -i "s/^version: .*/version: $VERSION/" hosting/kubernetes/mailrelay/chart.yaml
-  sed -i "s/^  tag: .*/  tag: $VERSION/" hosting/kubernetes/mailrelay/values.yaml
-
   # Bump version in package.json
   npm version $VERSION
   git add package.json hosting/docker/docker-compose.yml hosting/kubernetes/mailrelay/chart.yaml hosting/kubernetes/mailrelay/values.yaml
