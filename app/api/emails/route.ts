@@ -28,7 +28,7 @@ export async function GET(request: Request) {
       body: emails.body,
       fromEmail: emails.fromEmail,
       toEmail: emails.toEmail,
-      receivedAt: emails.sentDate,
+      sentDate: emails.sentDate,
       isHtml: emails.isHtml,
       read: emails.read,
       attachments: sql`JSON_AGG(JSON_BUILD_OBJECT('id', ${attachments.id}, 'fileName', ${attachments.filename}))`.as('attachments'),

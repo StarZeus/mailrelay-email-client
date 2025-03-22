@@ -21,25 +21,24 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-
   return (
     <html lang="en" className={`bg-white text-gray-800 ${inter.className}`}>
       <body className="flex h-screen" suppressHydrationWarning>
-          <AuthProvider>
-            <div className="flex flex-col h-full flex-1">
-                <SidebarProvider>
-                  <AppSidebar />
-                </SidebarProvider>
-            </div>
-            <div className="flex flex-col w-full">
-              <Header />
-                <main className="flex-1 overflow-auto">
-                  {children}
-                </main>
-            </div>
-            <Toaster />
-            <SonnerToaster position="bottom-left" />
-          </AuthProvider>
+        <AuthProvider>
+          <div className="flex flex-col h-full flex-1">
+            <SidebarProvider>
+              <AppSidebar />
+            </SidebarProvider>
+          </div>
+          <div className="flex flex-col w-full">
+            <Header />
+            <main className="flex-1 overflow-hidden">
+              {children}
+            </main>
+          </div>
+          <Toaster />
+          <SonnerToaster position="bottom-left" />
+        </AuthProvider>
       </body>
     </html>
   );
