@@ -6,6 +6,9 @@ import { Loader2 } from 'lucide-react';
 import { useFilters } from '@/hooks/useFilters';
 import { useSearchParams } from 'next/navigation';
 import { parseEmail } from '@/lib/utils/string';
+import { ClientWrapper } from '@/app/components/client-wrapper';
+import { PanelGroup } from '../components/panel-group';
+import { SelectionProvider } from '../context/SelectionContext';
 import { EmailComposerDialog } from '@/app/components/EmailComposerDialog';
 import { FilterList } from './components/FilterList';
 import { FilterDetails } from './components/FilterDetails';
@@ -236,64 +239,66 @@ export default function FiltersPage() {
     setComposerOpen(true);
   };
 
-  return (
-    <>
-      <div className="flex flex-1 h-full overflow-hidden">
-        <FilterList
-          filters={filters as FilterRule[]}
-          selectedRule={selectedRule}
-          onSelectRule={setSelectedRule}
-          onToggleRule={toggleFilter}
-          onAddNewRule={() => {
-            setSelectedRule({
-              id: 0,
-              name: 'New Rule',
-              fromPattern: '',
-              toPattern: '',
-              subjectPattern: '',
-              enabled: true,
-              operator: 'AND',
-              actions: [],
-            });
-            setIsEditing(true);
-          }}
-        />
-        <div className="w-2/3 border-r border-gray-200 overflow-hidden">
-          <FilterDetails
-            selectedRule={selectedRule}
-            isEditing={isEditing}
-            runningRuleId={runningRuleId}
-            onSave={handleSave}
-            onDelete={handleDelete}
-            onToggleEdit={() => {
-              setIsEditing(!isEditing);
-              if (isEditing) {
-                refresh();
-              }
-            }}
-            onRunRule={runRule}
-            onDeleteAction={handleDeleteAction}
-            onActionsReorder={handleActionsReorder}
-            onAddAction={handleAddAction}
-            onOpenComposer={handleOpenComposer}
+    return (
+      <ClientWrapper>
+        <SelectionProvider<FilterAction>>
+          <PanelGroup
+            list={<FilterList
+              filters={filters as FilterRule[]}
+              selectedRule={selectedRule}
+              onSelectRule={setSelectedRule}
+              onToggleRule={toggleFilter}
+              onAddNewRule={() => {
+                setSelectedRule({
+                  id: 0,
+                  name: 'New Rule',
+                  fromPattern: '',
+                  toPattern: '',
+                  subjectPattern: '',
+                  enabled: true,
+                  operator: 'AND',
+                  actions: [],
+                });
+                setIsEditing(true);
+              }}
+            />}
+            detail={<FilterDetails
+              selectedRule={selectedRule}
+              isEditing={isEditing}
+              runningRuleId={runningRuleId}
+              onSave={handleSave}
+              onDelete={handleDelete}
+              onToggleEdit={() => {
+                setIsEditing(!isEditing);
+                if (isEditing) {
+                  refresh();
+                }
+              }}
+              onRunRule={runRule}
+              onDeleteAction={handleDeleteAction}
+              onActionsReorder={handleActionsReorder}
+              onAddAction={handleAddAction}
+              onOpenComposer={handleOpenComposer}
+            />}
           />
-        </div>
-      </div>
-      {selectedRule && (
-        <EmailComposerDialog
-          open={composerOpen}
-          onOpenChange={setComposerOpen}
-          templateType={selectedRule.actions[currentActionIndex || 0]?.config?.templateType || 'html'}
-          initialTemplate={
-            selectedRule.actions[currentActionIndex || 0]?.config?.templateType === 'mjml'
-              ? selectedRule.actions[currentActionIndex || 0]?.config?.mjmlTemplate || ''
-              : selectedRule.actions[currentActionIndex || 0]?.config?.htmlTemplate || ''
-          }
-          initialRecipientExpression={selectedRule.actions[currentActionIndex || 0]?.config?.recipientExpression || '{{email.toEmail}}'}
-          emailData={emailData}
-          onSave={handleSaveTemplate}
-        />
-      )}
-    </>
-  );
+          <>
+            {selectedRule && (
+              <EmailComposerDialog
+                open={composerOpen}
+                onOpenChange={setComposerOpen}
+                templateType={selectedRule.actions[currentActionIndex || 0]?.config?.templateType || 'html'}
+                initialTemplate={
+                  selectedRule.actions[currentActionIndex || 0]?.config?.templateType === 'mjml'
+                    ? selectedRule.actions[currentActionIndex || 0]?.config?.mjmlTemplate || ''
+                    : selectedRule.actions[currentActionIndex || 0]?.config?.htmlTemplate || ''
+                }
+                initialRecipientExpression={selectedRule.actions[currentActionIndex || 0]?.config?.recipientExpression || '{{email.toEmail}}'}
+                emailData={emailData}
+                onSave={handleSaveTemplate}
+              />
+            )}
+          </>
+        </SelectionProvider>
+      </ClientWrapper>
+    );
 }

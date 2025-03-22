@@ -75,7 +75,7 @@ export const FilterDetails = ({
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <>
       <div className="p-4 border-b border-gray-200 flex justify-between items-center">
         <h2 className="text-lg font-semibold">
           {isEditing ? 'Edit Rule' : 'Rule Details'}
@@ -262,6 +262,6 @@ export const FilterDetails = ({
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }; 

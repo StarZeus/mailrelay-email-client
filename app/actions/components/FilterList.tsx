@@ -21,7 +21,7 @@ export const FilterList = ({
   onAddNewRule 
 }: FilterListProps) => {
   return (
-    <div className="w-1/3 border-r border-gray-200 overflow-hidden flex flex-col">
+    <div className="border-r border-gray-200 overflow-hidden flex flex-col">
       <div className="p-4 border-b border-gray-200 flex justify-between items-center">
         <h1 className="text-lg font-semibold">Filters & Actions</h1>
         <Button 
