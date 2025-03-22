@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useIntersection } from '@mantine/hooks';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Toggle } from '@/components/ui/toggle';

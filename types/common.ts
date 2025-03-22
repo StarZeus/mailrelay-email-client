@@ -11,6 +11,16 @@ export interface Email {
   attachments?: any[];
 }
 
+export interface ProcessedEmail {
+  id: number;
+  emailId: number;
+  ruleName: string;
+  status: string;
+  processedAt: string;
+  email: Email;
+  isHtml?: boolean;
+}
+
 export interface ActionPayload {
   email: Email;
   chainData?: any;
