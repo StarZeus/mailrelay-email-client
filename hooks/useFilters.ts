@@ -21,8 +21,10 @@ interface FilterRule {
 export function useFilters() {
   const [filters, setFilters] = useState<FilterRule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [runningRuleId, setRunningRuleId] = useState<number | null>(null);
+
 
   const refresh = async () => {
     try {
@@ -105,5 +107,7 @@ export function useFilters() {
     deleteFilter,
     runRule,
     refresh,
+    editing,
+    setEditing
   };
 } 

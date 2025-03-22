@@ -3,44 +3,89 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import { useSearchParams } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TrashIcon, Loader2, Play, Edit, Save, X, BadgePlus, ChevronUp, ChevronDown } from 'lucide-react';
-import { FilterRule, FilterAction } from '../types';
+import { FilterRule, FilterAction, EmailData } from '../types';
+import { useFilters } from '@/hooks/useFilters';
 import { SortableAction } from './SortableAction';
 import { useState, useEffect } from 'react';
+import { parseEmail } from '@/lib/utils/string';
+import { useSelection } from '@/app/context/SelectionContext';
+import { EmailComposerDialog } from '@/app/components/EmailComposerDialog';
 
-interface FilterDetailsProps {
-  selectedRule: FilterRule | null;
-  isEditing: boolean;
-  runningRuleId: number | null;
-  onSave: (rule: FilterRule) => void;
-  onDelete: (id: number) => void;
-  onToggleEdit: () => void;
-  onRunRule: (id: number) => void;
-  onDeleteAction: (ruleId: number, actionId: number) => void;
-  onActionsReorder: (actions: FilterAction[]) => void;
-  onAddAction: () => void;
-  onOpenComposer?: (index: number) => void;
-}
-
-export const FilterDetails = ({
-  selectedRule,
-  isEditing,
-  runningRuleId,
-  onSave,
-  onDelete,
-  onToggleEdit,
-  onRunRule,
-  onDeleteAction,
-  onActionsReorder,
-  onAddAction,
-  onOpenComposer,
-}: FilterDetailsProps) => {
+export const FilterDetails = () => {
+  const searchParams = useSearchParams();
+  const { selectedItem: selectedRule, setSelectedItem: setSelectedRule } = useSelection<FilterRule>();
   const [localRule, setLocalRule] = useState<FilterRule | null>(selectedRule);
+  const [isEditing, setIsEditing] = useState(false);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [currentActionIndex, setCurrentActionIndex] = useState<number | null>(null);
+  const { editing, runningRuleId, runRule, refresh } = useFilters();
+  const [emailData, setEmailData] = useState<EmailData>({
+    email: {
+      id: 123,
+      subject: "<<Email Subject>>",
+      fromEmail: "<<Sender Email>>",
+      toEmail: "<<Recipient Email>>",
+      body: "<<Email Body>>",
+      bodyJson: {},
+      sentDate: new Date().toISOString(),
+      attachments: []
+    }
+  });
 
+  useEffect(() => {
+    const filterEmailId = searchParams.get('filterEmail');
+    if (filterEmailId) {
+      addNewRuleFromEmail(filterEmailId);
+    }
+  }, [searchParams]);
+  
   useEffect(() => {
     setLocalRule(selectedRule);
   }, [selectedRule]);
+
+  useEffect(() => {
+    setIsEditing(editing);
+  }, [editing]);
+
+  async function addNewRuleFromEmail(emailId: string) {
+    try {
+      const emailsPromise = await fetch(`/api/emails?attachmentSchema=true&id=${emailId}`);
+      const emailData = await emailsPromise.json();
+
+      if(Array.isArray(emailData.emails) && emailData.emails.length === 0) {
+        toast.error('Email not found');
+        return;
+      }
+
+      const email = emailData.emails[0];
+      setEmailData(email);
+
+      setSelectedRule({
+        id: 0,
+        name: email.subject,
+        fromPattern: parseEmail(email.fromEmail).email,
+        toPattern: parseEmail(email.toEmail).email,
+        subjectPattern: email.subject,
+        enabled: true,
+        operator: 'AND',
+        actions: []
+      });
+      setIsEditing(true);
+    } catch (error) {
+      toast.error('Failed to load email data');
+    }
+  }
+
+  const onToggleEdit = () => {
+    setIsEditing(!isEditing);
+    if (isEditing) {
+      refresh();
+    }
+  }
 
   const handleMoveAction = (index: number, direction: 'up' | 'down') => {
     if (!localRule) return;
@@ -53,17 +98,153 @@ export const FilterDetails = ({
     newActions.splice(newIndex, 0, movedItem);
     // Refresh ui
     setLocalRule(prev => prev ? { ...prev, actions: newActions } : null);
-    onActionsReorder(newActions);
+    handleActionsReorder(newActions);
   };
 
   const handleLocalUpdate = (updates: Partial<FilterRule>) => {
     setLocalRule(prev => prev ? { ...prev, ...updates } : null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (localRule) {
-      onSave(localRule);
+      await handleSaveRule(localRule);
     }
+  };
+
+  async function handleDeleteRule(id: number) {
+    try {
+      const response = await fetch(`/api/filter-rules?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Failed to delete rule');
+
+      toast.success('Filter rule deleted successfully');
+      refresh();
+      setSelectedRule(null);
+    } catch (error) {
+      toast.error('Failed to delete filter rule');
+    }
+  }
+
+  const handleActionsReorder = async function (actions: FilterAction[]) {
+    try {
+      actions.forEach((action, index) => {
+        action.order = index;
+      });
+
+      if (selectedRule) {
+        setSelectedRule({
+          ...selectedRule,
+          actions
+        });
+      }
+    } catch (error) {
+      toast.error('Failed to save action order');
+    }
+  }
+
+  const handleDeleteAction = async function(ruleId: number, actionId: number) {
+    if (actionId < 0) {
+      // For temporary actions, just remove from local state
+      if (selectedRule) {
+        setSelectedRule({
+          ...selectedRule,
+          actions: selectedRule.actions.filter(a => a.id !== actionId)
+        });
+      }
+      return;
+    }
+
+    // For existing actions, proceed with API call
+    try {
+      const response = await fetch(`/api/filter-rules/actions?ruleId=${ruleId}&actionId=${actionId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Failed to delete action');
+
+      if (selectedRule) {
+        setSelectedRule({
+          ...selectedRule,
+          actions: selectedRule.actions.filter(a => a.id !== actionId)
+        });
+      }
+
+      toast.success('Action deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete action');
+    }
+  }
+
+  async function handleSaveRule(rule: FilterRule) {
+    try {
+      // Filter out temporary IDs before saving
+      const ruleToSave = {
+        ...rule,
+        actions: rule.actions.map(action => ({
+          ...action,
+          id: action.id > 0 ? action.id : undefined // Remove temporary IDs
+        }))
+      };
+
+      const response = await fetch('/api/filter-rules', {
+        method: rule.id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ruleToSave),
+      });
+
+      if (!response.ok) throw new Error('Failed to save rule');
+
+      toast.success('Filter rule saved successfully');
+      setSelectedRule(rule);
+      refresh();
+      setIsEditing(false);
+    } catch (error) {
+      toast.error('Failed to save filter rule');
+    }
+  }
+
+  const handleOpenComposer = (index: number) => {
+    setCurrentActionIndex(index);
+    setComposerOpen(true);
+  };
+
+  const handleSaveTemplate = (template: string, recipientExpression: string) => {
+    if (currentActionIndex === null || !selectedRule) return;
+    
+    const newActions = [...selectedRule.actions];
+    let action = newActions[currentActionIndex];
+    console.log("newActions:", newActions);
+    console.log("Action:", action);
+
+    if(!action){
+      action = {
+        id: -Date.now(), // Use negative timestamp as temporary ID
+        ruleId: selectedRule.id,
+        type: 'email-relay',
+        config: {
+          templateType: 'html',
+        },
+        order: selectedRule.actions.length
+      };
+    }
+    
+    newActions[currentActionIndex] = {
+      ...(action || {}),
+      config: {
+        ...(action.config || {}),
+        [action?.config?.templateType === 'mjml' ? 'mjmlTemplate' : 'htmlTemplate']: template,
+        recipientExpression: recipientExpression,
+      },
+    };
+    
+    setSelectedRule({
+      ...selectedRule,
+      actions: newActions,
+    });
+    
+    toast.success('Template and recipient expression saved successfully');
   };
 
   if (!localRule) {
@@ -114,7 +295,7 @@ export const FilterDetails = ({
                 size="icon"
                 className="h-8 w-8"
                 title="Run rule"
-                onClick={() => onRunRule(localRule.id)}
+                onClick={() => runRule(localRule.id)}
                 disabled={runningRuleId === localRule.id || !localRule.enabled}
               >
                 {runningRuleId === localRule.id ? (
@@ -139,7 +320,7 @@ export const FilterDetails = ({
                 size="icon"
                 className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                 title="Delete rule"
-                onClick={() => onDelete(localRule.id)}
+                onClick={() => handleDeleteRule(localRule.id)}
               >
                 <TrashIcon className="h-5 w-5" />
                 <span className="sr-only">Delete rule</span>
@@ -246,7 +427,7 @@ export const FilterDetails = ({
                     action={action}
                     index={index}
                     isEditing={isEditing}
-                    onDelete={() => onDeleteAction(localRule.id, action.id)}
+                    onDelete={() => handleDeleteAction(localRule.id, action.id)}
                     onChange={(updatedAction) => {
                       const newActions = [...localRule.actions];
                       newActions[index] = updatedAction;
@@ -254,11 +435,26 @@ export const FilterDetails = ({
                     }}
                     onMoveAction={(direction) => handleMoveAction(index, direction)}
                     totalActions={localRule.actions.length}
-                    onOpenComposer={onOpenComposer}
+                    onOpenComposer={handleOpenComposer}
                   />
                 </div>
               </div>
             ))}
+            {selectedRule && (
+              <EmailComposerDialog
+                open={composerOpen}
+                onOpenChange={setComposerOpen}
+                templateType={selectedRule.actions[currentActionIndex || 0]?.config?.templateType || 'html'}
+                initialTemplate={
+                  selectedRule.actions[currentActionIndex || 0]?.config?.templateType === 'mjml'
+                    ? selectedRule.actions[currentActionIndex || 0]?.config?.mjmlTemplate || ''
+                    : selectedRule.actions[currentActionIndex || 0]?.config?.htmlTemplate || ''
+                }
+                initialRecipientExpression={selectedRule.actions[currentActionIndex || 0]?.config?.recipientExpression || '{{email.toEmail}}'}
+                emailData={emailData}
+                onSave={handleSaveTemplate}
+              />
+            )}
           </div>
         </div>
       </div>

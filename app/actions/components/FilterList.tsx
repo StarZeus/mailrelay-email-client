@@ -4,22 +4,28 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { CopyPlus } from 'lucide-react';
 import { FilterRule } from '../types';
+import { useSelection } from '@/app/context/SelectionContext';
+import { useState, useEffect } from 'react';
+import { useFilters } from '@/hooks/useFilters';
 
-interface FilterListProps {
-  filters: FilterRule[];
-  selectedRule: FilterRule | null;
-  onSelectRule: (rule: FilterRule) => void;
-  onToggleRule: (id: number) => void;
-  onAddNewRule: () => void;
-}
+export const FilterList = () => {
+  const { filters, toggleFilter, setEditing } = useFilters();
+  const { selectedItem: selectedRule, setSelectedItem: setSelectedRule } = useSelection<FilterRule>();
 
-export const FilterList = ({ 
-  filters, 
-  selectedRule, 
-  onSelectRule, 
-  onToggleRule,
-  onAddNewRule 
-}: FilterListProps) => {
+  const handleAddRule = () => {
+    setSelectedRule({
+      id: 0,
+      name: 'New Rule',
+      fromPattern: '',
+      toPattern: '',
+      subjectPattern: '',
+      enabled: true,
+      operator: 'AND',
+      actions: [],
+    });
+    setEditing(true);
+  }
+
   return (
     <div className="border-r border-gray-200 overflow-hidden flex flex-col">
       <div className="p-4 border-b border-gray-200 flex justify-between items-center">
@@ -29,28 +35,28 @@ export const FilterList = ({
           size="icon"
           className="h-8 w-8"
           title="Add new rule"
-          onClick={onAddNewRule}
+          onClick={handleAddRule}
         >
           <CopyPlus className="h-5 w-5" />
           <span className="sr-only">Add new rule</span>
         </Button>
       </div>
       <div className="divide-y divide-gray-200" data-testid="filter-list">
-        {filters?.map((rule) => (
+        {filters?.map((rule:FilterRule) => (
           <div
             key={rule.id}
             data-testid="filter-item"
             className={`p-4 cursor-pointer hover:bg-gray-50 ${
               selectedRule?.id === rule.id ? 'bg-blue-50 border-l-4 border-l-gray-200' : ''
             }`}
-            onClick={() => onSelectRule(rule)}
+            onClick={() => setSelectedRule(rule)}
           >
             <div className="flex items-center justify-between">
               <span>{rule.name}</span>
               <div className="flex items-center gap-2">
                 <Switch 
                   checked={rule.enabled} 
-                  onCheckedChange={() => onToggleRule(rule.id)} 
+                  onCheckedChange={() => toggleFilter(rule.id)} 
                 />
               </div>
             </div>
