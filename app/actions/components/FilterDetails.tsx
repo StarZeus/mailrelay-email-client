@@ -211,32 +211,34 @@ export const FilterDetails = () => {
   };
 
   const handleSaveTemplate = (template: string, recipientExpression: string) => {
-    if (currentActionIndex === null || !selectedRule) return;
+    if (currentActionIndex === null || !localRule) return;
     
-    const newActions = [...selectedRule.actions];
+    const newActions = [...localRule.actions];
     let action = newActions[currentActionIndex];
-    console.log("newActions:", newActions);
-    console.log("Action:", action);
 
     if(!action){
       action = {
-        id: -Date.now(), // Use negative timestamp as temporary ID
-        ruleId: selectedRule.id,
+        id: -Date.now(),
+        ruleId: localRule.id,
         type: 'email-relay',
         config: {
           templateType: 'html',
+          htmlTemplate: '',
+          recipientExpression: '{{email.toEmail}}'
         },
-        order: selectedRule.actions.length
+        order: localRule.actions.length
       };
     }
     
+    const templateType = action.config?.templateType || 'html';
     newActions[currentActionIndex] = {
-      ...(action || {}),
+      ...action,
       config: {
-        ...(action.config || {}),
-        [action?.config?.templateType === 'mjml' ? 'mjmlTemplate' : 'htmlTemplate']: template,
-        recipientExpression: recipientExpression,
-      },
+        ...action.config,
+        templateType,
+        [templateType === 'mjml' ? 'mjmlTemplate' : 'htmlTemplate']: template,
+        recipientExpression
+      }
     };
     
     setSelectedRule({
@@ -405,8 +407,12 @@ export const FilterDetails = () => {
                         {
                           id: -Date.now(),
                           ruleId: localRule.id,
-                          type: 'forward',
-                          config: {},
+                          type: 'email-relay',
+                          config: {
+                            templateType: 'html',
+                            htmlTemplate: '',
+                            recipientExpression: '{{email.toEmail}}'
+                          },
                           order: localRule.actions.length
                         },
                       ],
@@ -445,13 +451,13 @@ export const FilterDetails = () => {
                 <EmailComposerDialog
                   open={composerOpen}
                   onOpenChange={setComposerOpen}
-                  templateType={selectedRule.actions[currentActionIndex || 0]?.config?.templateType || 'html'}
+                  templateType={localRule.actions[currentActionIndex || 0]?.config?.templateType || 'html'}
                   initialTemplate={
-                    selectedRule.actions[currentActionIndex || 0]?.config?.templateType === 'mjml'
-                      ? selectedRule.actions[currentActionIndex || 0]?.config?.mjmlTemplate || ''
-                      : selectedRule.actions[currentActionIndex || 0]?.config?.htmlTemplate || ''
+                    localRule.actions[currentActionIndex || 0]?.config?.templateType === 'mjml'
+                      ? localRule.actions[currentActionIndex || 0]?.config?.mjmlTemplate || ''
+                      : localRule.actions[currentActionIndex || 0]?.config?.htmlTemplate || ''
                   }
-                  initialRecipientExpression={selectedRule.actions[currentActionIndex || 0]?.config?.recipientExpression || '{{email.toEmail}}'}
+                  initialRecipientExpression={localRule.actions[currentActionIndex || 0]?.config?.recipientExpression || '{{email.toEmail}}'}
                   emailData={emailData}
                   onSave={handleSaveTemplate}
                 />

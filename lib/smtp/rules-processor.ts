@@ -442,7 +442,8 @@ async function processEmailRelay(payload: ActionPayload, config: Record<string, 
         body: payload.email.body,
         bodyJson: payload.email.bodyJson,
         isHtml: payload.email.isHtml,
-        sentDate: payload.email.sentDate
+        sentDate: payload.email.sentDate,
+        attachments: payload.email.attachments
       },
       chainData: payload.chainData
     };
@@ -556,10 +557,11 @@ async function processEmailRelay(payload: ActionPayload, config: Record<string, 
       secure: process.env.SMTP_SECURE === 'true'
     });
 
+    let emailContent={}
     // Send to each recipient
     for (const recipient of recipients) {
-      await transporter.sendMail({
-        from: process.env.SMTP_FROM,
+      emailContent = {
+        from: process.env.SMTP_FROM || 'mailrelay@email.com',
         to: recipient,
         subject: payload.email.subject || '',
         html: html,
@@ -567,8 +569,9 @@ async function processEmailRelay(payload: ActionPayload, config: Record<string, 
           filename: att.filename,
           content: Buffer.from(att.content, 'hex'),
           contentType: att.contentType,
-        })),
-      });
+        }))
+      };
+      await transporter.sendMail(emailContent);
     }
 
     return {

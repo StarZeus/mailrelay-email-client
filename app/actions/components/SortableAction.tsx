@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TrashIcon, ChevronUp, ChevronDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { SortableActionProps } from '../types';
 import { ForwardConfig } from './action-types/ForwardConfig';
 import { WebhookConfig } from './action-types/WebhookConfig';
