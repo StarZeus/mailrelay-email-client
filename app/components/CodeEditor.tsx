@@ -60,7 +60,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   mode,
   placeholder,
   className,
-  height = '100%', // Changed default from 400px to 100%
+  height = '100%',
   onDrop,
   onDragOver,
   onDragLeave,
@@ -97,39 +97,37 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   return (
     <div 
       ref={editorRef}
-      className={`relative h-full overflow-auto ${className || ''}`}
+      className={`relative ${className || ''}`}
       style={{
-        position: 'relative'
+        height,
+        overflow: 'hidden'
       }}
       onDrop={onDrop}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
     >
-      <div className="h-full">
-        <CodeMirror
-          value={value}
-          onChange={onChange}
-          extensions={[
-            getLanguageExtension(),
-            editorTheme,
-            EditorView.lineWrapping,
-            EditorView.scrollMargins.of(() => ({top: 0, bottom: 0})),
-            EditorView.updateListener.of(update => {
-              if (update.view) {
-                viewRef.current = update.view;
-              }
-            })
-          ]}
-          placeholder={placeholder}
-          className="h-full"
-          readOnly={readOnly}
-          basicSetup={{
-            lineNumbers: true,
-            highlightActiveLineGutter: true,
-            highlightActiveLine: true
-          }}
-        />
-      </div>
+      <CodeMirror
+        value={value}
+        onChange={onChange}
+        extensions={[
+          getLanguageExtension(),
+          editorTheme,
+          EditorView.lineWrapping,
+          EditorView.updateListener.of(update => {
+            if (update.view) {
+              viewRef.current = update.view;
+            }
+          })
+        ]}
+        placeholder={placeholder}
+        style={{ height: '100%' }}
+        readOnly={readOnly}
+        basicSetup={{
+          lineNumbers: true,
+          highlightActiveLineGutter: true,
+          highlightActiveLine: true
+        }}
+      />
     </div>
   );
 };

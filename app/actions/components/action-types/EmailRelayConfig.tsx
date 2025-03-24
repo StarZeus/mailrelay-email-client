@@ -170,7 +170,7 @@ export const EmailRelayConfig = ({ action, isEditing, onChange, onOpenComposer, 
               }}
               mode={action.config.templateType}
               readOnly={!isEditing}
-              height="400px"
+              height="500px"
               placeholder={action.config.templateType === 'mjml' ? 
                 `<mjml>
   <mj-body>
