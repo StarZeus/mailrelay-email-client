@@ -15,21 +15,25 @@ interface EmailComposerProps {
   templateType: 'mjml' | 'html';
   initialTemplate: string;
   initialRecipientExpression?: string;
+  initialSubjectExpression?: string;
   emailData: any;
-  onSave: (template: string, recipientExpression: string) => void;
+  onSave: (template: string, recipientExpression: string, subjectExpression: string) => void;
 }
 
 export const EmailComposer: React.FC<EmailComposerProps> = ({
   templateType,
   initialTemplate,
   initialRecipientExpression = '{{email.toEmail}}',
+  initialSubjectExpression = '{{email.subject}}',
   emailData,
   onSave,
 }) => {
   const [template, setTemplate] = useState(initialTemplate);
   const [recipientExpression, setRecipientExpression] = useState(initialRecipientExpression);
+  const [subjectExpression, setSubjectExpression] = useState(initialSubjectExpression);
   const [preview, setPreview] = useState<string>('');
   const [evaluatedRecipients, setEvaluatedRecipients] = useState<string[]>([]);
+  const [evaluatedSubject, setEvaluatedSubject] = useState<string>('');
   const [isRendering, setIsRendering] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<string>('editor');
@@ -51,10 +55,10 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
     }
   }, [activeTab]);
 
-  // Mark preview as needing update when template or recipient expression changes
+  // Mark preview as needing update when template, recipient, or subject expression changes
   useEffect(() => {
     setPreviewNeedsUpdate(true);
-  }, [template, recipientExpression]);
+  }, [template, recipientExpression, subjectExpression]);
 
   // Only render preview when switching to preview tab
   useEffect(() => {
@@ -108,12 +112,39 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
     }
   };
 
+  const evaluateSubject = () => {
+    try {
+      // If it's the default expression, check if subject exists
+      if (subjectExpression === '{{email.subject}}') {
+        if (emailData?.subject) {
+          setEvaluatedSubject(emailData.subject);
+        }
+        return;
+      }
+
+      // Handle Handlebars-style expressions
+      const template = Handlebars.compile(subjectExpression);
+      const result = template({ email: emailData });
+
+      if (typeof result !== 'string') {
+        throw new Error('Subject expression must evaluate to a string');
+      }
+
+      setEvaluatedSubject(result);
+    } catch (error) {
+      console.error('Error evaluating subject expression:', error);
+      toast.error('Failed to evaluate subject expression');
+      setEvaluatedSubject('');
+    }
+  };
+
   const renderPreview = async () => {
     if (!template) return;
     
     setIsRendering(true);
     try {
       evaluateRecipients();
+      evaluateSubject();
       
       const response = await fetch('/api/render-template', {
         method: 'POST',
@@ -123,7 +154,9 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
         body: JSON.stringify({
           template,
           templateType,
-          data: {email:emailData},
+          data: { 
+            email: emailData
+          },
         }),
       });
       
@@ -193,109 +226,129 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
       <div className="grid h-full grid-cols-[1fr_2fr] overflow-hidden">
         <div className="border-r h-full">
           <ScrollArea className="h-full p-4">
-            <JsonTreeView data={emailData} onDragStart={handleJsonDragStart} />
+              <JsonTreeView data={emailData} onDragStart={handleJsonDragStart} />
           </ScrollArea>
         </div>
         
         <div className="h-full">
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="flex h-full flex-col">
-            <TabsList className="mx-4 mt-2 sticky top-0 z-10">
-              <TabsTrigger value="editor">Editor</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="editor" className="flex-1 mt-0 overflow-hidden">
-              <div 
-                ref={editorRef} 
-                className="h-full border-t border-b" 
-              >
-                <CodeEditor
-                  value={template}
-                  onChange={setTemplate}
-                  mode={templateType}
-                  placeholder={templateType === 'mjml' ? 
-                    `<mjml>
-  <mj-body>
-    <mj-section>
-      <mj-column>
-        <mj-text>{{email.subject}}</mj-text>
-        <mj-divider />
-        <mj-text>
-          <ul style="list-style-type: disc; padding-left: 20px;">
-            {{#each email.items}}
-              <li style="margin-bottom: 10px;">{{this}}</li>
-            {{/each}}
-          </ul>
-        </mj-text>
-        <mj-text>{{{email.body}}}</mj-text>
-      </mj-column>
-    </mj-section>
-  </mj-body>
-</mjml>` : 
-                    `<!DOCTYPE html>
-<html>
-  <head><title>{{email.subject}}</title></head>
-  <body>...</body>
-</html>`
-                  }
-                  className="px-4"
-                  onDrop={handleDrop}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                />
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="preview" className="flex-1 mt-0 overflow-hidden h-full flex flex-col">
-              <div className="p-4 border-b">
-                <div className="flex flex-col gap-2">
-                  {evaluatedRecipients.length > 0 && (
-                    <div className="flex items-start gap-2">
-                      <span className="text-sm font-medium text-gray-700">Recipients:</span>
-                      <div className="flex-1">
-                        {evaluatedRecipients.map((recipient, index) => (
-                          <div key={index} className="text-sm text-gray-600">
-                            {recipient}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+          <div className='space-y-2'>
+            <div className='mx-4'>
+              <label className="text-sm font-medium">Recipient Expression</label>
+              <Input
+                type="text"
+                value={recipientExpression}
+                onChange={(e) => setRecipientExpression(e.target.value)}
+                className="flex-1 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-blue-500"
+                placeholder="{{email.toEmail}} or custom expression to extract recipients"
+              />
+            </div>
+            <div className='mx-4'>
+              <label className="text-sm font-medium">Subject Expression</label>
+              <Input
+                value={subjectExpression}
+                onChange={(e) => setSubjectExpression(e.target.value)}
+                placeholder="{{email.toSubject}} or custom expression"
+                className="mt-1"
+              />
+
+            </div>
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="flex h-full flex-col">
+              <TabsList className="mx-4 mt-2 sticky top-0 z-10">
+                <TabsTrigger value="editor">Editor</TabsTrigger>
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="editor" className="flex-1 mt-0 overflow-hidden">
+                <div 
+                  ref={editorRef} 
+                  className="h-full border-t border-b" 
+                >
+                  <CodeEditor
+                    value={template}
+                    onChange={setTemplate}
+                    mode={templateType}
+                    placeholder={templateType === 'mjml' ? 
+                      `<mjml>
+    <mj-body>
+      <mj-section>
+        <mj-column>
+          <mj-text>{{email.subject}}</mj-text>
+          <mj-divider />
+          <mj-text>
+            <ul style="list-style-type: disc; padding-left: 20px;">
+              {{#each email.items}}
+                <li style="margin-bottom: 10px;">{{this}}</li>
+              {{/each}}
+            </ul>
+          </mj-text>
+          <mj-text>{{{email.body}}}</mj-text>
+        </mj-column>
+      </mj-section>
+    </mj-body>
+  </mjml>` : 
+                      `<!DOCTYPE html>
+  <html>
+    <head><title>{{email.subject}}</title></head>
+    <body>...</body>
+  </html>`
+                    }
+                    className="px-4"
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                  />
                 </div>
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <ScrollArea className="h-full">
-                  {isRendering ? (
-                    <div className="grid place-items-center h-full p-4">
-                      <div className="text-center">
-                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                        <p className="text-gray-500">Rendering preview...</p>
+              </TabsContent>
+              
+              <TabsContent value="preview" className="flex-1 mt-0 overflow-hidden h-full flex flex-col">
+                <div className="p-4 border-b">
+                  <div className="flex flex-col gap-2">
+                    {evaluatedRecipients.length > 0 && (
+                      <div className="flex items-start gap-2">
+                        <span className="text-sm font-medium text-gray-700">Recipients:</span>
+                        <div className="flex-1">
+                          {evaluatedRecipients.map((recipient, index) => (
+                            <div key={index} className="text-sm text-gray-600">
+                              {recipient}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-start gap-2">
+                      <span className="text-sm font-medium text-gray-700">Subject:</span>
+                      <div className="flex-1">
+                          <div className="text-sm text-gray-600">
+                            {evaluatedSubject}
+                          </div>
                       </div>
                     </div>
-                  ) : (
-                    <div className="bg-white border rounded-lg m-4">
-                      <div className="p-4" dangerouslySetInnerHTML={{ __html: preview }} />
-                    </div>
-                  )}
-                </ScrollArea>
-              </div>
-            </TabsContent>
-          </Tabs>
+                  </div>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <ScrollArea className="h-full">
+                    {isRendering ? (
+                      <div className="grid place-items-center h-full p-4">
+                        <div className="text-center">
+                          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                          <p className="text-gray-500">Rendering preview...</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-white border rounded-lg m-4">
+                        <div className="p-4" dangerouslySetInnerHTML={{ __html: preview }} />
+                      </div>
+                    )}
+                  </ScrollArea>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
       
       <div className="p-4 border-t flex items-center justify-end space-x-4 bg-white">
-        <div className="flex-1 flex items-center space-x-2">
-          <label className="text-sm font-medium text-gray-700">Recipients</label>
-          <Input
-            type="text"
-            value={recipientExpression}
-            onChange={(e) => setRecipientExpression(e.target.value)}
-            className="flex-1 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-blue-500"
-            placeholder="email.toEmail or custom expression to extract recipients"
-          />
-        </div>
-        <Button variant="outline" onClick={() => onSave(template, recipientExpression)}>
+        <Button variant="outline" onClick={() => onSave(template, recipientExpression, subjectExpression)}>
           Save Template
         </Button>
       </div>

@@ -10,8 +10,9 @@ interface EmailComposerDialogProps {
   templateType: 'mjml' | 'html';
   initialTemplate: string;
   initialRecipientExpression?: string;
+  initialSubjectExpression?: string;
   emailData: any;
-  onSave: (template: string, recipientExpression: string) => void;
+  onSave: (template: string, recipientExpression: string, subjectExpression: string) => void;
 }
 
 export const EmailComposerDialog: React.FC<EmailComposerDialogProps> = ({
@@ -20,11 +21,12 @@ export const EmailComposerDialog: React.FC<EmailComposerDialogProps> = ({
   templateType,
   initialTemplate,
   initialRecipientExpression,
+  initialSubjectExpression,
   emailData,
   onSave,
 }) => {
-  const handleSave = (template: string, recipientExpression: string) => {
-    onSave(template, recipientExpression);
+  const handleSave = (template: string, recipientExpression: string, subjectExpression: string) => {
+    onSave(template, recipientExpression, subjectExpression);
     onOpenChange(false);
   };
 
@@ -41,6 +43,7 @@ export const EmailComposerDialog: React.FC<EmailComposerDialogProps> = ({
             templateType={templateType}
             initialTemplate={initialTemplate}
             initialRecipientExpression={initialRecipientExpression}
+            initialSubjectExpression={initialSubjectExpression}
             emailData={emailData}
             onSave={handleSave}
           />

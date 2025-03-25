@@ -101,6 +101,42 @@ export const EmailRelayConfig = ({ action, isEditing, onChange, onOpenComposer, 
             </Button>
           )}
         </div>
+        <div className='space-y-2 mb-4'>
+          <div>
+            <Label>Recipient Expression</Label>
+            <Input
+              value={action.config.recipientExpression || ''}
+              onChange={(e) => {
+                onChange({
+                  ...action,
+                  config: {
+                    ...action.config,
+                    recipientExpression: e.target.value,
+                  },
+                });
+              }}
+              disabled={!isEditing}
+              placeholder="email.toEmail or custom expression to extract recipients"
+            />
+          </div>
+          <div>
+            <Label>Subject Expression</Label>
+            <Input
+              value={action.config.subjectExpression || ''}
+              onChange={(e) => {
+                onChange({
+                  ...action,
+                  config: {
+                    ...action.config,
+                    subjectExpression: e.target.value,
+                  },
+                });
+              }}
+              disabled={!isEditing}
+              placeholder="email.subject or custom expression to extract subject"
+            />
+          </div>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="border rounded-lg p-4">
             <div className="font-semibold mb-2">Available Email Data:</div>
@@ -195,23 +231,6 @@ export const EmailRelayConfig = ({ action, isEditing, onChange, onOpenComposer, 
             </div>
           </div>          
         </div>
-      </div>
-      <div>
-        <Label>Recipient Expression</Label>
-        <Input
-          value={action.config.recipientExpression || ''}
-          onChange={(e) => {
-            onChange({
-              ...action,
-              config: {
-                ...action.config,
-                recipientExpression: e.target.value,
-              },
-            });
-          }}
-          disabled={!isEditing}
-          placeholder="email.toEmail or custom expression to extract recipients"
-        />
       </div>
     </div>
   );

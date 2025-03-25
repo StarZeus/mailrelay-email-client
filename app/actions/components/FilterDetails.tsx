@@ -210,7 +210,7 @@ export const FilterDetails = () => {
     setComposerOpen(true);
   };
 
-  const handleSaveTemplate = (template: string, recipientExpression: string) => {
+  const handleSaveTemplate = (template: string, recipientExpression: string, subjectExpression: string) => {
     if (currentActionIndex === null || !localRule) return;
     
     const newActions = [...localRule.actions];
@@ -224,7 +224,8 @@ export const FilterDetails = () => {
         config: {
           templateType: 'html',
           htmlTemplate: '',
-          recipientExpression: '{{email.toEmail}}'
+          recipientExpression: '{{email.toEmail}}',
+          subjectExpression: '{{email.subject}}'
         },
         order: localRule.actions.length
       };
@@ -237,7 +238,8 @@ export const FilterDetails = () => {
         ...action.config,
         templateType,
         [templateType === 'mjml' ? 'mjmlTemplate' : 'htmlTemplate']: template,
-        recipientExpression
+        recipientExpression,
+        subjectExpression
       }
     };
     
@@ -458,6 +460,7 @@ export const FilterDetails = () => {
                       : localRule.actions[currentActionIndex || 0]?.config?.htmlTemplate || ''
                   }
                   initialRecipientExpression={localRule.actions[currentActionIndex || 0]?.config?.recipientExpression || '{{email.toEmail}}'}
+                  initialSubjectExpression={localRule.actions[currentActionIndex || 0]?.config?.subjectExpression || '{{email.subject}}'}
                   emailData={emailData}
                   onSave={handleSaveTemplate}
                 />
