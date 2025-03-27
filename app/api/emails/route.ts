@@ -85,6 +85,13 @@ export async function GET(request: Request) {
       }
     }
 
+    if(Array.isArray(results) && results.length > 0){//remove attachment when file name and id is null
+      results = results.map(email => {
+        email.attachments = email.attachments.filter(att => att.id !== null);
+        return email;
+      })
+    }
+
     logger.info({
       msg: 'Emails fetched successfully',
       count: results.length,

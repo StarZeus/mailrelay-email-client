@@ -10,6 +10,9 @@ import { CodeEditor } from './CodeEditor';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Handlebars } from '@/lib/handlebars-config';
 import { Input } from '@/components/ui/input';
+import { ResizablePanelGroup } from '@/components/ui/resizable';
+import { ResizablePanel } from '@/components/ui/resizable';
+import { ResizableHandle } from '@/components/ui/resizable';
 
 interface EmailComposerProps {
   templateType: 'mjml' | 'html';
@@ -223,129 +226,134 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
 
   return (
     <div className="grid h-full grid-rows-[1fr_auto]">
-      <div className="grid h-full grid-cols-[1fr_2fr] overflow-hidden">
-        <div className="border-r h-full">
-          <ScrollArea className="h-full p-4">
+        <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-4rem)] rounded-lg border">
+          <ResizablePanel defaultSize={35}>
+            <div className="flex h-full flex-col overflow-auto">
               <JsonTreeView data={emailData} onDragStart={handleJsonDragStart} />
-          </ScrollArea>
-        </div>
-        
-        <div className="h-full">
-          <div className='space-y-2'>
-            <div className='mx-4'>
-              <label className="text-sm font-medium">Recipient Expression</label>
-              <Input
-                type="text"
-                value={recipientExpression}
-                onChange={(e) => setRecipientExpression(e.target.value)}
-                className="flex-1 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-blue-500"
-                placeholder="{{email.toEmail}} or custom expression to extract recipients"
-              />
             </div>
-            <div className='mx-4'>
-              <label className="text-sm font-medium">Subject Expression</label>
-              <Input
-                value={subjectExpression}
-                onChange={(e) => setSubjectExpression(e.target.value)}
-                placeholder="{{email.toSubject}} or custom expression"
-                className="mt-1"
-              />
-
-            </div>
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="flex h-full flex-col">
-              <TabsList className="mx-4 mt-2 sticky top-0 z-10">
-                <TabsTrigger value="editor">Editor</TabsTrigger>
-                <TabsTrigger value="preview">Preview</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="editor" className="flex-1 mt-0 overflow-hidden">
-                <div 
-                  ref={editorRef} 
-                  className="h-full border-t border-b" 
-                >
-                  <CodeEditor
-                    value={template}
-                    onChange={setTemplate}
-                    mode={templateType}
-                    placeholder={templateType === 'mjml' ? 
-                      `<mjml>
-    <mj-body>
-      <mj-section>
-        <mj-column>
-          <mj-text>{{email.subject}}</mj-text>
-          <mj-divider />
-          <mj-text>
-            <ul style="list-style-type: disc; padding-left: 20px;">
-              {{#each email.items}}
-                <li style="margin-bottom: 10px;">{{this}}</li>
-              {{/each}}
-            </ul>
-          </mj-text>
-          <mj-text>{{{email.body}}}</mj-text>
-        </mj-column>
-      </mj-section>
-    </mj-body>
-  </mjml>` : 
-                      `<!DOCTYPE html>
-  <html>
-    <head><title>{{email.subject}}</title></head>
-    <body>...</body>
-  </html>`
-                    }
-                    className="px-4"
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                  />
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="preview" className="flex-1 mt-0 overflow-hidden h-full flex flex-col">
-                <div className="p-4 border-b">
-                  <div className="flex flex-col gap-2">
-                    {evaluatedRecipients.length > 0 && (
-                      <div className="flex items-start gap-2">
-                        <span className="text-sm font-medium text-gray-700">Recipients:</span>
-                        <div className="flex-1">
-                          {evaluatedRecipients.map((recipient, index) => (
-                            <div key={index} className="text-sm text-gray-600">
-                              {recipient}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex items-start gap-2">
-                      <span className="text-sm font-medium text-gray-700">Subject:</span>
-                      <div className="flex-1">
-                          <div className="text-sm text-gray-600">
-                            {evaluatedSubject}
-                          </div>
-                      </div>
-                    </div>
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={65}>
+            <div className="flex h-full flex-col overflow-auto">
+              <div className="h-full">
+                <div className='space-y-2'>
+                  <div className='mx-4'>
+                    <label className="text-sm font-medium">Recipient Expression</label>
+                    <Input
+                      type="text"
+                      value={recipientExpression}
+                      onChange={(e) => setRecipientExpression(e.target.value)}
+                      className="flex-1 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-blue-500"
+                      placeholder="{{email.toEmail}} or custom expression to extract recipients"
+                    />
                   </div>
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <ScrollArea className="h-full">
-                    {isRendering ? (
-                      <div className="grid place-items-center h-full p-4">
-                        <div className="text-center">
-                          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                          <p className="text-gray-500">Rendering preview...</p>
+                  <div className='mx-4'>
+                    <label className="text-sm font-medium">Subject Expression</label>
+                    <Input
+                      value={subjectExpression}
+                      onChange={(e) => setSubjectExpression(e.target.value)}
+                      placeholder="{{email.toSubject}} or custom expression"
+                      className="mt-1"
+                    />
+
+                  </div>
+                  <Tabs value={activeTab} onValueChange={handleTabChange} className="flex h-full flex-col">
+                    <TabsList className="mx-4 mt-2 sticky top-0 z-10">
+                      <TabsTrigger value="editor">Editor</TabsTrigger>
+                      <TabsTrigger value="preview">Preview</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="editor" className="flex-1 mt-0 overflow-hidden">
+                      <div 
+                        ref={editorRef} 
+                        className="h-full border-t border-b" 
+                      >
+                        <CodeEditor
+                          height='400px'
+                          value={template}
+                          onChange={setTemplate}
+                          mode={templateType}
+                          placeholder={templateType === 'mjml' ? 
+                            `<mjml>
+          <mj-body>
+            <mj-section>
+              <mj-column>
+                <mj-text>{{email.subject}}</mj-text>
+                <mj-divider />
+                <mj-text>
+                  <ul style="list-style-type: disc; padding-left: 20px;">
+                    {{#each email.items}}
+                      <li style="margin-bottom: 10px;">{{this}}</li>
+                    {{/each}}
+                  </ul>
+                </mj-text>
+                <mj-text>{{{email.body}}}</mj-text>
+              </mj-column>
+            </mj-section>
+          </mj-body>
+        </mjml>` : 
+                            `<!DOCTYPE html>
+        <html>
+          <head><title>{{email.subject}}</title></head>
+          <body>...</body>
+        </html>`
+                          }
+                          className="px-4"
+                          onDrop={handleDrop}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                        />
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="preview" className="flex-1 mt-0 overflow-hidden h-full flex flex-col">
+                      <div className="p-4 border-b">
+                        <div className="flex flex-col gap-2">
+                          {evaluatedRecipients.length > 0 && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-sm font-medium text-gray-700">Recipients:</span>
+                              <div className="flex-1">
+                                {evaluatedRecipients.map((recipient, index) => (
+                                  <div key={index} className="text-sm text-gray-600">
+                                    {recipient}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex items-start gap-2">
+                            <span className="text-sm font-medium text-gray-700">Subject:</span>
+                            <div className="flex-1">
+                                <div className="text-sm text-gray-600">
+                                  {evaluatedSubject}
+                                </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    ) : (
-                      <div className="bg-white border rounded-lg m-4">
-                        <div className="p-4" dangerouslySetInnerHTML={{ __html: preview }} />
+                      <div className="flex-1 overflow-hidden">
+                        <ScrollArea className="h-full">
+                          {isRendering ? (
+                            <div className="grid place-items-center h-full p-4">
+                              <div className="text-center">
+                                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                                <p className="text-gray-500">Rendering preview...</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="bg-white border rounded-lg m-4">
+                              <div className="p-4" dangerouslySetInnerHTML={{ __html: preview }} />
+                            </div>
+                          )}
+                        </ScrollArea>
                       </div>
-                    )}
-                  </ScrollArea>
+                    </TabsContent>
+                  </Tabs>
                 </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </div>
-      </div>
+              </div>
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       
       <div className="p-4 border-t flex items-center justify-end space-x-4 bg-white">
         <Button variant="outline" onClick={() => onSave(template, recipientExpression, subjectExpression)}>

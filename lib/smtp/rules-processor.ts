@@ -376,9 +376,9 @@ async function sendToKafka(payload: ActionPayload, topic: string, brokers: strin
   return payload;
 }
 
-async function runJavaScript(input: ActionPayload, code: string): Promise<ActionPayload> {
+async function runJavaScript($input: ActionPayload, code: string): Promise<ActionPayload> {
   const context = {
-    input,
+    $input,
     console: {
       log: console.log,
       error: console.error,
@@ -386,7 +386,63 @@ async function runJavaScript(input: ActionPayload, code: string): Promise<Action
     fetch: fetch,
     setTimeout: setTimeout,
     clearTimeout: clearTimeout,
-    Promise: Promise
+    Promise: Promise,
+    // Array methods
+    Array,
+    'Array.prototype': {
+      slice: Array.prototype.slice,
+      splice: Array.prototype.splice,
+      push: Array.prototype.push,
+      pop: Array.prototype.pop,
+      shift: Array.prototype.shift,
+      unshift: Array.prototype.unshift,
+      concat: Array.prototype.concat,
+      join: Array.prototype.join,
+      reverse: Array.prototype.reverse,
+      sort: Array.prototype.sort,
+      map: Array.prototype.map,
+      filter: Array.prototype.filter,
+      reduce: Array.prototype.reduce,
+      reduceRight: Array.prototype.reduceRight,
+      forEach: Array.prototype.forEach,
+      some: Array.prototype.some,
+      every: Array.prototype.every,
+      find: Array.prototype.find,
+      findIndex: Array.prototype.findIndex,
+      includes: Array.prototype.includes,
+      indexOf: Array.prototype.indexOf,
+      lastIndexOf: Array.prototype.lastIndexOf,
+      flat: Array.prototype.flat,
+      flatMap: Array.prototype.flatMap,
+      keys: Array.prototype.keys,
+      values: Array.prototype.values,
+      entries: Array.prototype.entries,
+      fill: Array.prototype.fill,
+      copyWithin: Array.prototype.copyWithin,
+    },
+    // Object methods
+    Object,
+    'Object.prototype': {
+      toString: Object.prototype.toString,
+      valueOf: Object.prototype.valueOf,
+      hasOwnProperty: Object.prototype.hasOwnProperty,
+      isPrototypeOf: Object.prototype.isPrototypeOf,
+      propertyIsEnumerable: Object.prototype.propertyIsEnumerable,
+      toLocaleString: Object.prototype.toLocaleString,
+    },
+    // Additional utility methods
+    JSON,
+    Math,
+    Date,
+    RegExp,
+    Error,
+    Map,
+    Set,
+    WeakMap,
+    WeakSet,
+    Symbol,
+    Reflect,
+    Proxy,
   };
 
   const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -398,7 +454,7 @@ async function runJavaScript(input: ActionPayload, code: string): Promise<Action
     return (async () => {
       try {
         with (context) {
-          ${hasReturnStatement ? code : `${code}; return input;`}
+          ${hasReturnStatement ? code : `${code}; return $input;`}
         }
       } catch (error) {
         console.error('Script error:', error);
@@ -420,12 +476,12 @@ async function runJavaScript(input: ActionPayload, code: string): Promise<Action
 
   if (typeof result !== 'object') {
     result = {
-      ...input,
+      ...$input,
       chainData: result
     };
   }
 
-  logger.debug({ msg: 'JavaScript action completed for email id', emailId: input.email.id });
+  logger.debug({ msg: 'JavaScript action completed for email id', emailId: $input.email.id });
   
   return result;
 }
