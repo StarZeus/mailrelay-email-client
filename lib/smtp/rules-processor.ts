@@ -12,6 +12,8 @@ import { validateActionConfig } from '../utils/validation';
 import { htmlToJson } from '../utils/html';
 import { parseEmail } from '../utils/string';
 import { Handlebars, compileHTML } from '../handlebars-config';
+import { SocksProxyAgent } from 'socks-proxy-agent';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 
 async function processEmailWithRules(email: Email, specificRuleId: number, isTest?: boolean) {
   const logger = smtpLogger.child({ emailId: email.id });
@@ -277,10 +279,19 @@ async function forwardEmail(payload: ActionPayload, forwardTo: string): Promise<
     .from(attachments)
     .where(eq(attachments.emailId, payload.email.id));
 
+  // Configure proxy if specified
+  let proxyAgent;
+  if (process.env.SMTP_PROXY_TYPE === 'socks') {
+    proxyAgent = new SocksProxyAgent(process.env.SMTP_PROXY_URL || '');
+  } else if (process.env.SMTP_PROXY_TYPE === 'http' || process.env.SMTP_PROXY_TYPE === 'https') {
+    proxyAgent = new HttpsProxyAgent(process.env.SMTP_PROXY_URL || '');
+  }
+
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true'
+    secure: process.env.SMTP_SECURE === 'true',
+    ...(proxyAgent && { proxy: proxyAgent })
   });
 
   const result = await transporter.sendMail({
@@ -606,11 +617,20 @@ async function processEmailRelay(payload: ActionPayload, config: Record<string, 
       .from(attachments)
       .where(eq(attachments.emailId, payload.email.id));
 
+    // Configure proxy if specified
+    let proxyAgent;
+    if (process.env.SMTP_PROXY_TYPE === 'socks') {
+      proxyAgent = new SocksProxyAgent(process.env.SMTP_PROXY_URL || '');
+    } else if (process.env.SMTP_PROXY_TYPE === 'http' || process.env.SMTP_PROXY_TYPE === 'https') {
+      proxyAgent = new HttpsProxyAgent(process.env.SMTP_PROXY_URL || '');
+    }
+
     // Create transporter
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true'
+      secure: process.env.SMTP_SECURE === 'true',
+      ...(proxyAgent && { proxy: proxyAgent })
     });
 
     let emailContent={}
