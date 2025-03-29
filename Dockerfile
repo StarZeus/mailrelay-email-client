@@ -23,6 +23,9 @@ ENV NEXT_SKIP_TYPECHECK=1
 # Install build dependencies and tsx globally
 RUN npm install -g pnpm tsx
 
+# Compile next.config.ts to next.config.js
+RUN npx tsx --build tsconfig.json
+
 # Build Next.js only
 RUN pnpm build
 
@@ -45,6 +48,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/server.ts ./server.ts
 COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/next.config.ts ./next.config.ts
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
