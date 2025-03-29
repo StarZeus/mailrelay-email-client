@@ -3,6 +3,9 @@ import type { NextConfig } from 'next';
 const config: NextConfig = {
   basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
   assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
+  publicRuntimeConfig: {
+    assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
+  },
   output: 'standalone',
   distDir: '.next',
   eslint: {
@@ -31,7 +34,7 @@ const config: NextConfig = {
     return [
       {
         source: '/',
-        destination: '/inbox',
+        destination: `${process.env.NEXT_PUBLIC_BASE_PATH}/inbox`,
         permanent: false,
       },
     ];
