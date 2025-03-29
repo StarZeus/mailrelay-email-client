@@ -4,6 +4,7 @@ import next from 'next';
 import { EmailServer } from './lib/smtp/smtp-server';
 import dotenv from 'dotenv';
 import { exec } from 'child_process';
+import nextConfig from './next.config';
 
 dotenv.config();
 
@@ -13,8 +14,15 @@ const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = parseInt(process.env.PORT || '3000', 10);
 
+// Make a runtime config by spreading the original and overriding with env values
+const runtimeConfig = {
+  ...nextConfig,
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH,
+  assetPrefix: process.env.NEXT_PUBLIC_ASSET_PREFIX
+};
+
 // Initialize Next.js
-const app = next({ dev, hostname, port });
+const app = next({ dev, hostname, port, conf: runtimeConfig });
 const handle = app.getRequestHandler();
 
 
@@ -52,7 +60,7 @@ async function start() {
         }
       }).listen(port, () => {
         // Pretty print server url
-        console.log(`> SMTP Client URL: http://${hostname}:${port}`);
+        console.log(`> SMTP Client URL: http://${hostname}:${port}${process.env.NEXT_PUBLIC_BASE_PATH}`);
 
         console.log(
           `**************************************************`

@@ -1,3 +1,4 @@
+import { useBasePath } from '@/app/components/providers/basepath-provider';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -19,6 +20,7 @@ interface FilterRule {
 }
 
 export function useFilters() {
+  const basePath = useBasePath();
   const [filters, setFilters] = useState<FilterRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -29,7 +31,7 @@ export function useFilters() {
   const refresh = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/filter-rules');
+      const response = await fetch(`${basePath}/api/filter-rules`);
       if (!response.ok) throw new Error('Failed to fetch rules');
       const data = await response.json();
       setFilters(data);
@@ -50,7 +52,7 @@ export function useFilters() {
   const toggleFilter = async (id: number) => {
     try {
       const rule = filters.find(f => f.id === id);
-      const response = await fetch('/api/filter-rules', {
+      const response = await fetch(`${basePath}/filter-rules`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, enabled: !rule?.enabled })
@@ -77,7 +79,7 @@ export function useFilters() {
   const runRule = async (id: number) => {
     try {
       setRunningRuleId(id);
-      const response = await fetch('/api/filter-rules', {
+      const response = await fetch(`${basePath}/filter-rules`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'run', ruleId: id })

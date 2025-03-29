@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useBasePath } from './providers/basepath-provider';
 import { useIntersection } from '@mantine/hooks';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
@@ -27,6 +28,7 @@ export const EmailList = () => {
   const [showUnprocessedOnly, setShowUnprocessedOnly] = useState(true);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const basePath = useBasePath();
 
   const lastEmailRef = useRef<HTMLDivElement>(null);
   const { ref, entry } = useIntersection({
@@ -49,7 +51,7 @@ export const EmailList = () => {
       clientLogger.debug('Fetching emails from API');
       setLoading(true);
       const q = searchParams.get('q');
-      const url = `/api/emails?${q ? `q=${q}&` : ''}${
+      const url = `${basePath}/api/emails?${q ? `q=${q}&` : ''}${
         cursor ? `cursor=${cursor}&` : ''
       }${showUnprocessedOnly ? 'unprocessed=true&' : ''}`;
       
@@ -81,7 +83,7 @@ export const EmailList = () => {
 
   async function markAsRead(id: number) {
     try {
-      const response = await fetch('/api/emails', {
+      const response = await fetch(`${basePath}/emails`, {
         method: 'PATCH',
         body: JSON.stringify({ id, read: true }),
       });
@@ -116,7 +118,7 @@ export const EmailList = () => {
     if (selectedEmails.size === 0) return;
 
     try {
-      const response = await fetch('/api/emails', {
+      const response = await fetch(`${basePath}/emails`, {
         method: 'DELETE',
         body: JSON.stringify({ ids: Array.from(selectedEmails) }),
       });

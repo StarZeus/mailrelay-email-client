@@ -4,6 +4,7 @@ const config: NextConfig = {
   basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
   assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
   publicRuntimeConfig: {
+    basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
     assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
   },
   output: 'standalone',
@@ -29,16 +30,7 @@ const config: NextConfig = {
     config.externals.push('mjml-parser-xml');
     config.externals.push('mjml-validator');
     return config;
-  },
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: `${process.env.NEXT_PUBLIC_BASE_PATH}/inbox`,
-        permanent: false,
-      },
-    ];
-  },
+  }
 };
 
 export default config;

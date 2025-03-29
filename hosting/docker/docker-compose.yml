@@ -17,6 +17,7 @@ services:
       - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-x1z9Th1w55o3CfZOoW9v4apznjdUp3vohnXTbtkQLXOIgSOzr7CmCexsg8p8JXJD}
       - OIDC_REDIRECT_URI=${OIDC_REDIRECT_URI:-http://localhost:3000/api/auth/callback/oidc}
       - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL:-/}
+      - NEXT_PUBLIC_ASSET_PREFIX=${NEXT_PUBLIC_ASSET_PREFIX:-/}
     ports:
       - "${PORT:-3000}:${PORT:-3000}"
     depends_on:

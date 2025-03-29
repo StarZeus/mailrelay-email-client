@@ -14,9 +14,11 @@ import { useState, useEffect } from 'react';
 import { parseEmail } from '@/lib/utils/string';
 import { useSelection } from '@/app/context/SelectionContext';
 import { EmailComposerDialog } from '@/app/components/EmailComposerDialog';
+import { useBasePath } from '@/app/components/providers/basepath-provider';
 
 export const FilterDetails = () => {
   const searchParams = useSearchParams();
+  const basePath = useBasePath();
   const { selectedItem: selectedRule, setSelectedItem: setSelectedRule } = useSelection<FilterRule>();
   const [localRule, setLocalRule] = useState<FilterRule | null>(selectedRule);
   const [isEditing, setIsEditing] = useState(false);
@@ -188,7 +190,7 @@ export const FilterDetails = () => {
         }))
       };
 
-      const response = await fetch('/api/filter-rules', {
+      const response = await fetch(`${basePath}/filter-rules`, {
         method: rule.id ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(ruleToSave),

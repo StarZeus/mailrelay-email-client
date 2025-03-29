@@ -20,11 +20,13 @@ import {
 import DOMPurify from 'isomorphic-dompurify';
 import { Email, ProcessedEmail } from '@/types/common';
 import { useSelection } from '../context/SelectionContext';
+import { useBasePath } from './providers/basepath-provider';
 
 
 
 
 export function ProcessedEmailList() {
+    const basePath = useBasePath();
     const [processedEmails, setProcessedEmails] = useState<Email[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedRules, setExpandedRules] = useState<Set<string>>(new Set());
@@ -40,7 +42,7 @@ export function ProcessedEmailList() {
     async function fetchProcessedEmails() {
       try {
         setLoading(true);
-        const res = await fetch('/api/processed-emails');
+        const res = await fetch(`${basePath}/api/processed-emails`);
         const data = await res.json();
         // Add HTML detection
         const processedData = data.emails.map((email: ProcessedEmail) => ({
@@ -71,7 +73,7 @@ export function ProcessedEmailList() {
   
     const deleteAllProcessed = async () => {
       try {
-        const res = await fetch('/api/processed-emails', {
+        const res = await fetch(`${basePath}/processed-emails`, {
           method: 'DELETE'
         });
         

@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { ResizablePanelGroup } from '@/components/ui/resizable';
 import { ResizablePanel } from '@/components/ui/resizable';
 import { ResizableHandle } from '@/components/ui/resizable';
+import { useBasePath } from './providers/basepath-provider';
 
 interface EmailComposerProps {
   templateType: 'mjml' | 'html';
@@ -31,6 +32,7 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
   emailData,
   onSave,
 }) => {
+  const basePath = useBasePath();
   const [template, setTemplate] = useState(initialTemplate);
   const [recipientExpression, setRecipientExpression] = useState(initialRecipientExpression);
   const [subjectExpression, setSubjectExpression] = useState(initialSubjectExpression);
@@ -149,7 +151,7 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
       evaluateRecipients();
       evaluateSubject();
       
-      const response = await fetch('/api/render-template', {
+      const response = await fetch(`${basePath}/render-template`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

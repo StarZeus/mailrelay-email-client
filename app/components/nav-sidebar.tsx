@@ -21,6 +21,7 @@ import {
     SidebarFooter,
     useSidebar,
 } from "@/components/ui/sidebar"
+import { useBasePath } from './providers/basepath-provider';
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> { }
 
@@ -29,6 +30,7 @@ export function AppSidebar() {
     const { data: session } = useSession();
     const { collapsed } = useSidebar();
     const isOIDCEnabled = process.env.OIDC_AUTH_ENABLED === 'true';
+    const basePath = useBasePath();
 
     const {
         state,
@@ -66,17 +68,17 @@ export function AppSidebar() {
                         <nav className="flex flex-col">
                             {[
                               {
-                                href: '/inbox',
+                                href: `${basePath}/inbox`,
                                 icon: <Inbox size={20} />,
                                 label: 'Inbox'
                               },
                               {
-                                href: '/processed', 
+                                href: `${basePath}/processed`, 
                                 icon: <MailCheck size={20} />,
                                 label: 'Processed'
                               },
                               {
-                                href: '/actions',
+                                href: `${basePath}/actions`,
                                 icon: <Settings size={20} />,
                                 label: 'Filters & Actions'
                               }
