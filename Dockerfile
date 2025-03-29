@@ -23,9 +23,6 @@ ENV NEXT_SKIP_TYPECHECK=1
 # Install build dependencies and tsx globally
 RUN npm install -g pnpm tsx
 
-# Compile next.config.ts to next.config.js
-RUN npx tsx --build tsconfig.json
-
 # Build Next.js only
 RUN pnpm build
 
