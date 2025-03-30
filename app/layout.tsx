@@ -20,13 +20,13 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: `${publicRuntimeConfig.basePath}/favicon.ico`,
+        url: `${publicRuntimeConfig.assetPrefix}/favicon.ico`,
         sizes: 'any',
       },
     ],
     apple: [
       {
-        url: `${publicRuntimeConfig.basePath}/apple-touch-icon.png`,
+        url: `${publicRuntimeConfig.assetPrefix}/apple-touch-icon.png`,
         sizes: '180x180',
         type: 'image/png',
       },

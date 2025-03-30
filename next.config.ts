@@ -2,10 +2,10 @@ import type { NextConfig } from 'next';
 
 const config: NextConfig = {
   basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
-  assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
+  assetPrefix: process.env.NEXT_PUBLIC_ASSET_PREFIX || '',
   publicRuntimeConfig: {
     basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
-    assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
+    assetPrefix: process.env.NEXT_PUBLIC_ASSET_PREFIX || '',
   },
   output: 'standalone',
   distDir: '.next',

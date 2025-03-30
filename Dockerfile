@@ -19,6 +19,9 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV POSTGRES_URL=postgres://postgres:postgres@localhost:54322/postgres
 ENV NEXT_SKIP_TYPECHECK=1
+# Add Placeholder values which will be replaced with env values during deployment time 
+ENV NEXT_PUBLIC_ASSET_PREFIX=/__DYNAMIC_ASSET_PREFIX__
+ENV NEXT_PUBLIC_BASE_PATH=/__DYNAMIC_BASE_PATH__
 
 # Install build dependencies and tsx globally
 RUN npm install -g pnpm tsx
@@ -68,6 +71,8 @@ USER nextjs
 ENV PORT=3000
 ENV SMTP_SERVER_PORT=2525
 ENV APP_MODE=all
+
+
 
 EXPOSE ${PORT}
 EXPOSE ${SMTP_SERVER_PORT}
