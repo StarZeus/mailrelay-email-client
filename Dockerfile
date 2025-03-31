@@ -17,7 +17,6 @@ COPY . .
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV POSTGRES_URL=postgres://postgres:postgres@localhost:54322/postgres
 ENV NEXT_SKIP_TYPECHECK=1
 # Add Placeholder values which will be replaced with env values during deployment time 
 ENV NEXT_PUBLIC_ASSET_PREFIX=/__DYNAMIC_ASSET_PREFIX__
@@ -49,6 +48,7 @@ COPY --from=builder /app/server.ts ./server.ts
 COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/next.config.ts ./next.config.ts
+COPY --from=builder /app/scripts/update-asset-prefix.sh ./scripts/update-asset-prefix.sh
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
