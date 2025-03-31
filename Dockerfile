@@ -17,6 +17,7 @@ COPY . .
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV POSTGRES_URL=postgres://user:pass@localhost:54322/postgres
 ENV NEXT_SKIP_TYPECHECK=1
 # Add Placeholder values which will be replaced with env values during deployment time 
 ENV NEXT_PUBLIC_ASSET_PREFIX=/__DYNAMIC_ASSET_PREFIX__
