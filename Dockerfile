@@ -50,15 +50,10 @@ COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/next.config.ts ./next.config.ts
 COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/package.json ./package.json
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Copy the complete .next directory structure
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 
 # Copy additional files needed for migrations
 COPY --from=builder /app/drizzle ./drizzle
@@ -77,4 +72,4 @@ EXPOSE ${PORT}
 EXPOSE ${SMTP_SERVER_PORT}
 
 # Run migrations and start server
-CMD npx drizzle-kit push --force && npm run start 
+CMD ["sh", "-c", "npx drizzle-kit push --force && npm run start"] 
