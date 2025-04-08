@@ -14,6 +14,8 @@ import { parseEmail } from '../utils/string';
 import { Handlebars, compileHTML } from '../handlebars-config';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { HttpsProxyAgent } from 'https-proxy-agent';
+import fetch from 'node-fetch';
+import https from 'https';
 
 async function processEmailWithRules(email: Email, specificRuleId: number, isTest?: boolean) {
   const logger = smtpLogger.child({ emailId: email.id });
@@ -332,6 +334,8 @@ async function callWebhook(payload: ActionPayload, url: string, method: string, 
         size: att.size,
       })),
     }),
+    // Disable SSL verification
+    agent: new https.Agent({ rejectUnauthorized: false })
   });
 
   if (!response.ok) {
