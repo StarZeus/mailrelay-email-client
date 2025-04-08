@@ -171,7 +171,7 @@ async function processEmailWithRules(email: Email, specificRuleId: number, isTes
       matchedRules: matchedRules.map(r => ({ id: r.id, name: r.name }))
     });
 
-    return currentPayload;
+    return true;
   } catch (error) {
     const errorMessage = error instanceof Error 
       ? error.message 
@@ -320,33 +320,59 @@ async function callWebhook(payload: ActionPayload, url: string, method: string, 
     .from(attachments)
     .where(eq(attachments.emailId, payload.email.id));
 
-  const response = await fetch(url, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Retry-Attempt': attempt.toString(),
-    },
-    body: JSON.stringify({
-      ...payload,
-      attachments: emailAttachments.map(att => ({
-        filename: att.filename,
-        contentType: att.contentType,
-        size: att.size,
-      })),
-    }),
-    // Disable SSL verification
-    agent: new https.Agent({ rejectUnauthorized: false })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Webhook failed with status ${response.status}: ${await response.text()}`);
+  // Check payload size before sending
+  const payloadSize = Buffer.byteLength(JSON.stringify(payload));
+  const MAX_PAYLOAD_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+  
+  if (payloadSize > MAX_PAYLOAD_SIZE) {
+    throw new Error(`Payload size (${payloadSize} bytes) exceeds maximum allowed size of ${MAX_PAYLOAD_SIZE} bytes`);
   }
 
-  const responseData = await response.json();
-  return {
-    ...payload,
-    chainData: responseData
-  };
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+  logger.info({ msg: `${method} ${url}`});
+
+  try {
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Retry-Attempt': attempt.toString(),
+        'Content-Length': payloadSize.toString(),
+      },
+      body: JSON.stringify(payload),
+      // Disable SSL verification
+      agent: new https.Agent({ 
+        rejectUnauthorized: false,
+        maxTotalSockets: 50,
+        maxFreeSockets: 10,
+        timeout: 30000 // 30 second timeout
+      }),
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Webhook failed with status ${response.status}: ${errorText}`);
+    }
+
+    const responseData = await response.json();
+    return {
+      ...payload,
+      chainData: responseData
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Webhook request timed out after 30 seconds');
+      }
+      throw new Error(`Webhook request failed: ${error.message}`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function sendToKafka(payload: ActionPayload, topic: string, brokers: string[]): Promise<ActionPayload> {
